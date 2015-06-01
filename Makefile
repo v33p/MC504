@@ -4,3 +4,8 @@
 # Makefile compila todo nosso projeto de forma simples usando o gcc.
 # Podemos adicionar testes aqui no makefile tambem.
 
+# TODO: Melhorar esse codigo de make
+mkfs: src/mkfs.c src/mkfs.h
+	gcc src/mkfs.c -o mkfs
+clean: mkfs
+	rm mkfs
