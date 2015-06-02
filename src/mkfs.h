@@ -32,12 +32,7 @@ necessarias para tratar determinado problema.
  */
 void parseInput (int argc, char** argv);
 
-// TODO: Funcao que cria estrutura baseada em um arquivo
-// TODO: Funcao que cria arquivo baseado em estrutura
-// TODO: Funcao que cria Filesystem
-// TODO: Funcao que cria Superblock
-// TODO: Funcao que cria bitmap de inode
-// TODO: Funcao que cria bitmap de datablocks
-// TODO: Funcao que cria inode
-// TODO: Funcao que cria datablocks
-// TODO: Funcao que calcula o tamanho dos datablocks
+/*
+  
+ */
+int parseSize (char* string);
