@@ -78,7 +78,7 @@ Datablock createDataBlock (Datablock next, Datablock prev) {
 }
 
 // FilesystemToFile
-void filesytemToFile (Filesystem fs, char* file_name) {
+void filesystemToFile (Filesystem fs, char* file_name) {
   FILE* file;
   file = fopen (file_name, "w");
   if (file == NULL) error ("Null file.");
