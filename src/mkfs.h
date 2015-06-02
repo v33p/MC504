@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include "bash.h"
 
 /* DEFINITIONS */
@@ -44,16 +45,16 @@ typedef struct bitmap {
   Bool *map; // vetor de booleanos = mapa de bits
 } bitmap, *Bitmap;
 
-// inode = 
+// inode
 typedef struct inode {
   int number;               // numero de identficacao 0 - 1023
-  struct inode *father;             // METADADO: apontador para o pai
+  struct inode *father;     // METADADO: apontador para o pai
   int permition;            // METADADO: valor da permissao do arquivo
-  // Time stamp             // METADADO: 
+  int timestamp;            // METADADO: time stamp convertido pra int 
   char *type;               // METADADO: tipo do dado
   char *name;               // METADADO: nome do arquivo
-  int *datablocks;          // Vetor de data blocks (?)
-} inode, *Inode;  
+  Datablock datablocks;     // Vetor de data blocks (?)
+} inode, *Inode;
 
 // file system
 typedef struct filesystem {
@@ -83,3 +84,4 @@ int main (int argc, char** argv);
 // TODO: Funcao que cria bitmap de datablocks
 // TODO: Funcao que cria inode
 // TODO: Funcao que cria datablocks
+// TODO: Funcao que calcula o tamanho dos datablocks
