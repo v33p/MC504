@@ -7,7 +7,21 @@
 
 #include "mkfs.h"
 
+// Main
 int main (int argc, char** argv) {
-  
+  parseInput (argc, argv);
   return EXIT_SUCCESS;
+}
+
+// parseInput
+void parseInput (int argc, char** argv) {
+  if (argc < 2) error ("Missing parameters.");
+  if (argc > 3) error ("Wrong number of parameters.");
+
+  if (strcmp (argv[2], "-b")) {
+    // 
+  }
+  else {
+    error ("Wrong parameters.");
+  }
 }
