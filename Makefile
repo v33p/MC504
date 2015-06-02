@@ -7,5 +7,7 @@
 # TODO: Melhorar esse codigo de make
 mkfs: src/mkfs.c src/mkfs.h
 	gcc src/mkfs.c -o mkfs
-clean: mkfs
-	rm mkfs
+bash.fs: src/bash.c src/bash.h
+	gcc src/bash.c -o bash.fs
+clean:
+	rm mkfs bash.fs
