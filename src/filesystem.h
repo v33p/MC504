@@ -14,13 +14,15 @@
 
 /* DEFINITIONS */
 #define FILE_SIZE 25165824        // 24Mb
+#define MAX_OVERHEAD 3145728      // 3072Kb = 3Mb
 #define MAX_BLOCK_SIZE 4096       // 4Kb
 #define MIN_BLOCK_SIZE 512        // 512b
-#define MAX_MAP_SIZE 1024         // 1Kb
 #define MAX_INODES 1024           // 1Kb
 #define MAX_BLOCKS_PER_INODE 1024 // 1Kb
-#define DATA_BLOCKS_SIZE 22020096 // 21Mb
-#define MAX_OVERHEAD 3145728      // 3072Kb
+#define BLOCKS_PER_INODE 30       // 
+#define INODE_SIZE 1665           //  
+#define INODE_TYPE_SIZE 4
+#define INODE_NAME_SIZE 40
 
 /* ENUM */
 typedef enum {false = 0, true = 1} Bool;
@@ -30,18 +32,11 @@ typedef enum {false = 0, true = 1} Bool;
 // superblock
 typedef struct superblock {
   int magic_number;      // identificador do filesystem
-  int root_position;     // posicao do diretorio root
+  Inode root_position;   // apontador para diretorio root
   int number_of_inodes;  // numero de inodes em uso
   int number_of_blocks;  // numero de blocos em uso
   int datablock_size;    // tamanho do bloco de dado
 } superblock, *Superblock;
-
-// datablock 
-typedef struct datablock {
-  char *content;  // conteudo
-  struct datablock *next; // bloco subsequente
-  struct datablock *prev; // bloco anterior
-} datablock, *Datablock;
 
 // bitmap 
 typedef struct bitmap {
@@ -50,27 +45,32 @@ typedef struct bitmap {
 
 // inode
 typedef struct inode {
-  int number;               // numero de identficacao 0 - 1023
-  struct inode *father;     // METADADO: apontador para o pai
-  int permition;            // METADADO: valor da permissao do arquivo
-  int timestamp;            // METADADO: time stamp convertido pra int 
-  char *type;               // METADADO: tipo do dado
-  char *name;               // METADADO: nome do arquivo
-  Bool dir;                 // true = inode dir ou false = inode file
-  int number_of_blocks;     // Numero de blocks
-  void* blocks;             // Lista de data blocks (?)
+  int number;                    // numero de identficacao 0 - 1023
+  struct inode *father;          // METADADO: apontador para o pai
+  int permition;                 // METADADO: valor da permissao do arquivo
+  int timestamp;                 // METADADO: time stamp convertido pra int 
+  char type[INODE_TYPE_SIZE];    // METADADO: tipo do dado
+  char name[INODE_NAME_SIZE];    // METADADO: nome do arquivo
+  Bool dir;                      // true = inode dir ou false = inode file
+  int number_of_blocks;          // Numero de blocks
+  int blocks[BLOCKS_PER_INODE];  // Lista de data blocks (?)
 } inode, *Inode;
 
 // file system
 typedef struct filesystem {
-  Superblock superblock;    // 20b
-  Bitmap inode_bitmap;      // 1024b
-  Bitmap datablock_bitmap;  // X b
-  Inode inodes[MAX_INODES]; // (16 + 3-4 + 20 + 4 + (4 * 200))b por inode em media 
-  Datablock first_datablock; // resto => X * Y = 21Mb
+  Superblock superblock;    // 20B
+  Bitmap inode_bitmap;      // 1024B
+  Bitmap datablock_bitmap;  // X B
+  Inode inodes[MAX_INODES]; // 
+  Datablock first_datablock;    // 
   // (importante: esse resto nao pode ser menor do que 88% do tamanho total)
 } filesystem, *Filesystem;
 
+// datablock
+typedef struct datablock {
+  int id;
+  char content[MAX_BLOCK_SIZE];
+} datablock, Datablock;
 
 /* FUNCTIONS */
 
@@ -106,7 +106,7 @@ um total de 'number_of_blocks' de blocos de tamanho 'datablock_size'.
     int number_of_blocks = numero total de blocos do filesystem
     int datablock_size = tamanho dos blocos do filesystem
  */
-Superblock createSuperBlock (int number_of_blocks, int datablock_size);
+Superblock createSuperBlock (int datablock_size);
 
 /*
   CreateBitmap: Cria um bitmap com vetor de Bool do tamanho de 'size'.
@@ -128,15 +128,6 @@ Bitmap createBitmap (int size);
 Inode createInode (int number, Inode father, int permition, char* type, char* name, Bool dir);
 
 /*
-  CreateDataBlock: Cria um datablock atrelado com os datablocks anterior
-e posterior deles na lista de blocos do inode.
-  param:
-    Datablock next = apontador para o proximo bloco da lista
-    Datablock prev = apontador para o bloco anterior da lista
- */
-Datablock CreateDataBlock (Datablock next, Datablock prev);
-
-/*
   FilesystemToFile: Dado uma estrutura de filesystem transforma ela num
 arquivo passado como parametro para funcao.
   param:
@@ -153,3 +144,4 @@ com bash.fs.
     char* file_name = nome do arquivo no qual se transformara em fs
  */
 Filesystem fileToFilesystem (char* file_name);
+

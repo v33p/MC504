@@ -22,26 +22,25 @@ void warning (const char* message) {
 // CreateFileSystem
 Filesystem createFileSystem (int datablock_size) {
   Filesystem fs = malloc (sizeof (filesystem));
-  int datablocks_size = DATA_BLOCKS_SIZE;
-  int number_of_blocks = datablocks_size / datablock_size;
-  fs->superblock = createSuperBlock (number_of_blocks, datablock_size);
+  int number_of_blocks = FILE_SIZE / datablock_size;
+  fs->superblock = createSuperBlock (datablock_size);
   fs->inode_bitmap = createBitmap (1024);
   fs->datablock_bitmap = createBitmap (number_of_blocks);
   for (int i = 1; i < MAX_INODES; i++) {
     fs->inodes[i] = NULL;
   }
-  fs->inodes[0] = createInode (0, NULL, 111, "", "", true);
+  fs->inodes[0] = fs->superblock->root_position;
   fs->first_datablock = NULL;
   return fs;
 }
 
 // CreateSuperBlock
-Superblock createSuperBlock (int number_of_blocks, int datablock_size) {
+Superblock createSuperBlock (int datablock_size) {
   Superblock superblock = malloc (sizeof (superblock));
   superblock->magic_number = 0; // nao sei como configurar o magic number
-  superblock->root_position = 20 + 1024 + number_of_blocks;
+  superblock->root_position = createInode (0, NULL, 111, "", "", true);
   superblock->number_of_inodes = 1;
-  superblock->number_of_blocks = 0;
+  superblock->number_of_blocks = 0; // precisa calcular
   superblock->datablock_size = datablock_size;
 }
 
@@ -64,17 +63,8 @@ Inode createInode (int number, Inode father, int permition, char* type, char* na
   inode->name = name;
   inode->dir = dir;
   inode->number_of_blocks = 0;
-  inode->blocks = NULL;
+  for (int i = 0; i < BLOCKS_PER_INODE; i++) inode->blocks[i] = NULL;
   return inode;
-}
-
-// CreateDataBlock
-Datablock createDataBlock (Datablock next, Datablock prev) {
-  Datablock datablock = malloc (sizeof (datablock));
-  datablock->content = NULL;
-  datablock->next = next;
-  datablock->prev = prev;
-  return datablock;
 }
 
 // FilesystemToFile
@@ -82,7 +72,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   FILE* file;
   file = fopen (file_name, "w");
   if (file == NULL) error ("Null file.");
-
+  
   // COMPLETAR
   
 }
@@ -90,10 +80,28 @@ void filesystemToFile (Filesystem fs, char* file_name) {
 // FileToFilesystem
 Filesystem fileToFilesystem (char* file_name) {
   Filesystem fs = malloc (sizeof (filesystem));
-
+  
   // COMPLETAR
 
   return fs;
+}
+
+
+// ReadBlock
+Datablock readBlock (int number, FILE *file) {
+  Datablock datablock = malloc (sizeof (datablock));
+  datablock->id = number;
+
+  // COMPLETAR
+  
+  return datablock;
+}
+
+// WriteBlock
+void writeBlock (int number, FILE *file, Datablock datablock) {
+
+  // COMPLETAR
+  
 }
 
 

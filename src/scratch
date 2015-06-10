@@ -1,0 +1,48 @@
+;; This buffer is for notes you don't want to save, and for Lisp evaluation.
+;; If you want to create a file, visit that file with C-x C-f,
+;; then enter the text in that file's own buffer.
+
+;; 24Mb = 25165824 b = T
+;; 3Mb = 3145728 b = M
+;; tamanho do bloco = X = 512b - 4096b
+
+;; SUPERBLOCK - 20 b - 1 bloco
+;; INODE BITMAP - 1024 b - 1-2 bloco
+;; DBB - T/X b - T/X/X bloco
+;; INODE - 1024 * (65 + (4 * 400)) b -
+
+;; Total de blocos no menor caso
+(/ 3145728 512)
+6144
+
+;; Total de blocos no maior caso
+(/ 3145728 4096)
+768
+
+;; Total de blocos para DBB no menor caso
+(/ 6144 512)
+12
+
+;; Total de blocos para DBB no maior caso
+(/ 768 4096)
+1
+
+;; Total de blocos para inode no menor caso
+(/ (* 1024 (+ 65 (* 4 400))) 512)
+3330 ;; 400 blocos
+1730 ;; 200 blocos
+930  ;; 100 blocos
+
+;; Total de blocos para inode no maior caso
+(/ (* 1024 (+ 65 (* 4 400))) 4096)
+416 ;; 400 blocos
+216 ;; 200 blocos
+116 ;; 100 blocos
+
+;; Total para menor caso
+(- 6144 (+ (+ (+ 3330 12) 2) 1)) ;; total de blocos - inodes, dbb, ib, sb
+2799 
+
+;; Total para maior caso 
+(- 768 (+ (+ (+ 416 1) 1) 1)) ;; total de blocos - inodes, dbb, ib, sb 
+349 

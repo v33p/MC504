@@ -6,6 +6,14 @@
 */
 
 #include "filesystem.c"
+#include "commands/cat.c"
+#include "commands/chdir.c"
+#include "commands/chmod.c"
+#include "commands/echo.c"
+#include "commands/exit.c"
+#include "commands/ls.c"
+#include "commands/mkdir.c"
+#include "commands/rm.c"
 
 /* DEFINITIONS */
 
