@@ -32,7 +32,7 @@ typedef enum {false = 0, true = 1} Bool;
 // superblock
 typedef struct superblock {
   int magic_number;      // identificador do filesystem
-  Inode root_position;   // apontador para diretorio root
+  struct inode* root_position;   // apontador para diretorio root
   int number_of_inodes;  // numero de inodes em uso
   int number_of_blocks;  // numero de blocos em uso
   int datablock_size;    // tamanho do bloco de dado
@@ -40,13 +40,13 @@ typedef struct superblock {
 
 // bitmap 
 typedef struct bitmap {
-  Bool *map; // vetor de booleanos = mapa de bits
+  Bool* map; // vetor de booleanos = mapa de bits
 } bitmap, *Bitmap;
 
 // inode
 typedef struct inode {
   int number;                    // numero de identficacao 0 - 1023
-  struct inode *father;          // METADADO: apontador para o pai
+  struct inode* father;          // METADADO: apontador para o pai
   int permition;                 // METADADO: valor da permissao do arquivo
   int timestamp;                 // METADADO: time stamp convertido pra int 
   char type[INODE_TYPE_SIZE];    // METADADO: tipo do dado
@@ -55,6 +55,12 @@ typedef struct inode {
   int number_of_blocks;          // Numero de blocks
   int blocks[BLOCKS_PER_INODE];  // Lista de data blocks (?)
 } inode, *Inode;
+
+// datablock
+typedef struct datablock {
+  int id;
+  char content[MAX_BLOCK_SIZE];
+} datablock, *Datablock;
 
 // file system
 typedef struct filesystem {
@@ -65,12 +71,6 @@ typedef struct filesystem {
   Datablock first_datablock;    // 
   // (importante: esse resto nao pode ser menor do que 88% do tamanho total)
 } filesystem, *Filesystem;
-
-// datablock
-typedef struct datablock {
-  int id;
-  char content[MAX_BLOCK_SIZE];
-} datablock, Datablock;
 
 /* FUNCTIONS */
 
@@ -145,3 +145,22 @@ com bash.fs.
  */
 Filesystem fileToFilesystem (char* file_name);
 
+/*
+  ReadBlock: Dado um id de um bloco e um file do filesystem, essa 
+funcao cria um datablock e retorna.
+  param:
+    int id = indice do bloco que quer acessar
+    FILE* file = arquivo que representa o hd do filesystem
+ */
+Datablock readBlock (int id, FILE* file);
+
+/*
+  WriteBlcok: Dado um id de um bloco, um file do filesystem e um
+datablock, essa funcao sublistitui o valor do datablock no bloco
+cujo id e passado como parametro.
+  param:
+    int id = indice do bloco que ira ser substituido
+    FILE* file = arquivo que representa o hd do filesystem
+    Datablock datablock = bloco que substituira o bloco antigo.
+ */
+void writeBlock (int id, FILE* file, Datablock datablock);

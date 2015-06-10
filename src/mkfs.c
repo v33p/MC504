@@ -17,7 +17,7 @@ int main (int argc, char** argv) {
 void parseInput (int argc, char** argv) {
   int datablock_size = 512;
   if (argc < 2) error ("Missing parameters.");
-  if (argc > 3) error ("Wrong number of parameters.");
+  if (argc > 4) error ("Wrong number of parameters.");
   
   if (strcmp ("-b", argv[1]) == 0) {
     if (argc < 4) error ("Missing parameters."); 
@@ -44,3 +44,4 @@ int parseSize (char* string) {
   }
   return atoi (string) * multiplier;
 }
+

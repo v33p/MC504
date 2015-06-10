@@ -31,6 +31,7 @@ Filesystem createFileSystem (int datablock_size) {
   }
   fs->inodes[0] = fs->superblock->root_position;
   fs->first_datablock = NULL;
+  //printf ("fs\n");
   return fs;
 }
 
@@ -42,6 +43,8 @@ Superblock createSuperBlock (int datablock_size) {
   superblock->number_of_inodes = 1;
   superblock->number_of_blocks = 0; // precisa calcular
   superblock->datablock_size = datablock_size;
+  //printf ("sb\n");
+  return superblock;
 }
 
 // CreateBitmap
@@ -49,6 +52,7 @@ Bitmap createBitmap (int size) {
   Bool* map = malloc (size * sizeof (Bool));
   Bitmap bitmap = malloc (sizeof (bitmap));
   bitmap->map = map;
+  //printf ("bm\n");
   return bitmap;
 }
 
@@ -59,11 +63,12 @@ Inode createInode (int number, Inode father, int permition, char* type, char* na
   inode->father = father;
   inode->permition = permition;
   inode->timestamp = (int) time(NULL);
-  inode->type = type;
-  inode->name = name;
+  strcpy (inode->type, type);
+  strcpy (inode->name, name);
   inode->dir = dir;
   inode->number_of_blocks = 0;
-  for (int i = 0; i < BLOCKS_PER_INODE; i++) inode->blocks[i] = NULL;
+  for (int i = 0; i < BLOCKS_PER_INODE; i++) inode->blocks[i] = -1;
+  //printf ("i\n");
   return inode;
 }
 
@@ -72,9 +77,12 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   FILE* file;
   file = fopen (file_name, "w");
   if (file == NULL) error ("Null file.");
-  
   // COMPLETAR
-  
+  //fseek (file, FILE_SIZE, SEEK_END);
+  for (int i = 0; i < FILE_SIZE; i++) {
+    fputc ('0', file);
+  }
+  fclose (file);
 }
 
 // FileToFilesystem
@@ -88,9 +96,9 @@ Filesystem fileToFilesystem (char* file_name) {
 
 
 // ReadBlock
-Datablock readBlock (int number, FILE *file) {
+Datablock readBlock (int id, FILE* file) {
   Datablock datablock = malloc (sizeof (datablock));
-  datablock->id = number;
+  datablock->id = id;
 
   // COMPLETAR
   
@@ -98,11 +106,14 @@ Datablock readBlock (int number, FILE *file) {
 }
 
 // WriteBlock
-void writeBlock (int number, FILE *file, Datablock datablock) {
+void writeBlock (int id, FILE* file, Datablock datablock) {
 
   // COMPLETAR
   
 }
+
+// FUNCOES AUXILIARES
+
 
 
 // TODO: Para todo codigo de create precisamos criar um codigo de free;
