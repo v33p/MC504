@@ -80,13 +80,14 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     fputc ('0', file);
   Datablock superblock = malloc (sizeof (datablock));
   superblock->id = 0;
-  copyIntToCharArray (superblock->content, &fs->superblock->magic_number);
+  memcpy (superblock->content, (void*) &fs->superblock->block_size, sizeof (int));
+  /*copyIntToCharArray (superblock->content, &fs->superblock->magic_number);
   //copyIntToCharArray (superblock->content+4, &fs->superblock->root_position);
   copyIntToCharArray (superblock->content+8, &fs->superblock->number_of_inodes);
   copyIntToCharArray (superblock->content+12, &fs->superblock->number_of_blocks);
   copyIntToCharArray (superblock->content+16, &fs->superblock->block_size);
-  // COMPLETAR
-  printf ("%s\n", superblock->content);
+  */// COMPLETAR
+  printf ("sb: %s\n", superblock->content);
   writeBlock (0, file, superblock, fs->superblock->block_size);
   //printf ("%s\n", superblock->content);
   fclose (file);
@@ -126,7 +127,7 @@ void writeBlock (int id, FILE* file, Datablock datablock, int block_size) {
 
 void copyIntToCharArray (char* array, int* value) {
   for (int i = 0; i < 4; i++) {
-    array[i] = (char) *(value + i);
+    array[i] = (char) *(value + (i * sizeof(char)));
   }
 }
 

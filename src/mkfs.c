@@ -15,19 +15,19 @@ int main (int argc, char** argv) {
 
 // parseInput
 void parseInput (int argc, char** argv) {
-  int datablock_size = 512;
+  int block_size = 512;
   if (argc < 2) error ("Missing parameters.");
   if (argc > 4) error ("Wrong number of parameters.");
   
   if (strcmp ("-b", argv[1]) == 0) {
     if (argc < 4) error ("Missing parameters."); 
-    datablock_size = parseSize (argv[2]);
-    Filesystem fs = createFileSystem (datablock_size);
+    block_size = parseSize (argv[2]);
+    Filesystem fs = createFileSystem (block_size);
     filesystemToFile (fs, argv[3]);
   }
   else if (argc == 2) {
     // Criar arquivo com valor default.
-    Filesystem fs = createFileSystem (datablock_size);
+    Filesystem fs = createFileSystem (block_size);
     filesystemToFile (fs, argv[1]);
   }
   else {
