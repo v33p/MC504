@@ -35,7 +35,7 @@ typedef struct superblock {
   struct inode* root_position;   // apontador para diretorio root
   int number_of_inodes;  // numero de inodes em uso
   int number_of_blocks;  // numero de blocos em uso
-  int datablock_size;    // tamanho do bloco de dado
+  int block_size;    // tamanho do bloco de dado
 } superblock, *Superblock;
 
 // bitmap 
@@ -92,21 +92,21 @@ void warning (const char* message);
 
 /*
   CreateFileSystem: Cria uma estrutura Filesystem com os valores padroes e com
-blocos de tamanho 'datablock_size' tomando cuidado para nao ultrapassar o 
+blocos de tamanho 'block_size' tomando cuidado para nao ultrapassar o 
 overhead.
   param:
-    int datablock_size = tamanho de cada bloco
+    int block_size = tamanho de cada bloco
  */
-Filesystem createFileSystem (int datablock_size);
+Filesystem createFileSystem (int block_size);
 
 /*
   CreateSuperBlock: Cria uma estrutura Superblock com os valores padroes e com
-um total de 'number_of_blocks' de blocos de tamanho 'datablock_size'. 
+um total de 'number_of_blocks' de blocos de tamanho 'block_size'. 
   param:
     int number_of_blocks = numero total de blocos do filesystem
-    int datablock_size = tamanho dos blocos do filesystem
+    int block_size = tamanho dos blocos do filesystem
  */
-Superblock createSuperBlock (int datablock_size);
+Superblock createSuperBlock (int block_size);
 
 /*
   CreateBitmap: Cria um bitmap com vetor de Bool do tamanho de 'size'.
@@ -152,7 +152,7 @@ funcao cria um datablock e retorna.
     int id = indice do bloco que quer acessar
     FILE* file = arquivo que representa o hd do filesystem
  */
-Datablock readBlock (int id, FILE* file);
+Datablock readBlock (int id, FILE* file, int block_size);
 
 /*
   WriteBlcok: Dado um id de um bloco, um file do filesystem e um
@@ -163,4 +163,12 @@ cujo id e passado como parametro.
     FILE* file = arquivo que representa o hd do filesystem
     Datablock datablock = bloco que substituira o bloco antigo.
  */
-void writeBlock (int id, FILE* file, Datablock datablock);
+void writeBlock (int id, FILE* file, Datablock datablock, int block_size);
+
+
+// FUNCOES AUXILIARES
+
+/*
+  
+ */
+void copyIntToCharArray (char* array, int* value);
