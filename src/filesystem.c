@@ -98,10 +98,10 @@ Filesystem fileToFilesystem (char* file_name) {
   FILE* file = fopen (file_name, "r");
   int block_size;
   //void* pointer = &block_size; 
-  fseek (file, sizeof (int) * 5, SEEK_END);
+  fseek (file, sizeof (int) * 5, SEEK_SET);
   fread (&block_size, sizeof (int), 1, file); 
   Filesystem fs = createFileSystem (block_size);
-  fseek (file, 0, SEEK_END);
+  fseek (file, 0, SEEK_SET);
   // COMPLETAR
   fclose (file);
   return fs;
@@ -112,14 +112,14 @@ Filesystem fileToFilesystem (char* file_name) {
 Datablock readBlock (int id, FILE* file, int block_size) {
   Datablock datablock = malloc (sizeof (datablock));
   datablock->id = id;
-  fseek (file, id * block_size, SEEK_END);
+  fseek (file, id * block_size, SEEK_SET);
   fread (datablock->content, sizeof (char), block_size, file);
   return datablock;
 }
 
 // WriteBlock
 void writeBlock (int id, FILE* file, Datablock datablock, int block_size) {
-  fseek (file, id * block_size, SEEK_END);
+  fseek (file, id * block_size, SEEK_SET);
   fwrite (datablock->content, sizeof (char), block_size, file); 
 }
 
