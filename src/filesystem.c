@@ -25,6 +25,7 @@ Filesystem createFileSystem (int32_t block_size) {
   int32_t number_of_blocks = FILE_SIZE / block_size;
   fs->superblock = createSuperBlock (block_size);
   fs->inode_bitmap = createBitmap (1024);
+  fs->inode_bitmap->map[0] = 1;
   fs->datablock_bitmap = createBitmap (number_of_blocks);
   for (int32_t i = 1; i < MAX_INODES; i++)
     fs->inodes[i] = NULL;
@@ -37,7 +38,7 @@ Filesystem createFileSystem (int32_t block_size) {
 // CreateSuperBlock
 Superblock createSuperBlock (int32_t block_size) {
   Superblock superblock = malloc (sizeof (superblock));
-  superblock->magic_number = 0; // nao sei como configurar o magic number
+  superblock->magic_number = 119785; // nao sei como configurar o magic number
   superblock->root_position = 0;
   superblock->number_of_inodes = 1;
   superblock->number_of_blocks = 0; // precisa calcular
@@ -130,18 +131,16 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   Inode root = fs->inodes[fs->superblock->root_position];
   block->id = ++atual;
   memcpy (block->content, (void*) &root->number, sizeof (int32_t));
-  memcpy (block->content+4, (void*) &root->father, sizeof (int32_t));
-  memcpy (block->content+8, (void*) &root->permition, sizeof (int32_t));
-  memcpy (block->content+12, (void*) &root->timestamp, sizeof (int32_t));
-  memcpy (block->content+16, (void*) root->type, INODE_TYPE_SIZE * sizeof (char));
-  memcpy (block->content+ (16 + INODE_TYPE_SIZE), (void*) root->name, INODE_NAME_SIZE * sizeof (char));
-  memcpy (block->content+ (16 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->dir, sizeof (char));
+  memcpy (block->content + 4, (void*) &root->father, sizeof (int32_t));
+  memcpy (block->content + 8, (void*) &root->permition, sizeof (int32_t));
+  memcpy (block->content + 12, (void*) &root->timestamp, sizeof (int32_t));
+  memcpy (block->content + 16, (void*) root->type, INODE_TYPE_SIZE * sizeof (char));
+  memcpy (block->content + (16 + INODE_TYPE_SIZE), (void*) root->name, INODE_NAME_SIZE * sizeof (char));
+  memcpy (block->content + (16 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->dir, sizeof (char));
   memcpy (block->content + (17 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->number_of_blocks, sizeof (int32_t));
   memcpy (block->content + (21 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) root->blocks, BLOCKS_PER_INODE * sizeof (int32_t));
   for (i = (21 + INODE_TYPE_SIZE + INODE_NAME_SIZE + (4 * BLOCKS_PER_INODE)); i < bsize; i++)
     block->content[i] = 0;
-
-  printf ("suruba\n");
   
   // escrevendo root
   writeBlock (atual, file, block, bsize);
@@ -156,6 +155,13 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   }
 
   printf ("inodes\n");
+
+  /*
+  fs->superblock->number_of_blocks = atual;
+  for (i = 0; i < atual; i++)
+    fs->datablock_bitmap->map[i] = 1;
+  */
+  
   
   //printf ("%s\n", superblock->content);
   fclose (file);
@@ -164,13 +170,69 @@ void filesystemToFile (Filesystem fs, char* file_name) {
 // FileToFilesystem
 Filesystem fileToFilesystem (char* file_name) {
   FILE* file = fopen (file_name, "r");
+
+  int32_t soi32 = sizeof (int32_t);
+  int32_t current = 0;
+
+  int32_t i;
+  
+  // CHECANDO FILESYSTEM
+  int32_t magic_number;
+  fread (&magic_number, soi32, 1, file); 
+  if (magic_number != 119785)
+    error ("Cannot read this filesystem"); 
+
+  
   int32_t block_size;
   //void* pointer = &block_size; 
-  fseek (file, sizeof (int32_t) * 4, SEEK_SET);
-  fread (&block_size, sizeof (int32_t), 1, file); 
-  printf("%d", block_size);
+  fseek (file, soi32 * 4, SEEK_SET);
+  fread (&block_size, soi32, 1, file); 
   Filesystem fs = createFileSystem (block_size);
   fseek (file, 0, SEEK_SET);
+
+  // SUPERBLOCK
+  Datablock block = readBlock (current, file, block_size);
+  fs->superblock->root_position = getIntAtBlock (soi32, block);
+  fs->superblock->number_of_inodes = getIntAtBlock (soi32*2, block);
+  fs->superblock->number_of_blocks = getIntAtBlock (soi32*3, block);
+
+  /*printf ("Testando: %d %d %d %d %d\n", fs->superblock->magic_number,
+	  fs->superblock->root_position,
+	  fs->superblock->number_of_inodes,
+	  fs->superblock->number_of_blocks,
+	  fs->superblock->block_size);
+  */
+  
+  // INODE BITMAP
+  clearBlock (block);
+  current++;
+  block = readBlock (current, file, block_size);
+  getStringAtBlock (0, block, MIN(block_size, 1024), fs->inode_bitmap->map);
+  if (block_size < 1024) {
+    current++;
+    block = readBlock (current, file, block_size);
+    getStringAtBlock (0, block, block_size, fs->inode_bitmap->map+block_size);
+  }
+
+  // DATABLOCK BITMAP
+  clearBlock (block);
+  int32_t total_blocks = FILE_SIZE / block_size;
+  for (i = 0; i < total_blocks/block_size; i++) {
+    current++;
+    clearBlock (block);
+    block = readBlock (current, file, block_size);
+    getStringAtBlock (0, block, block_size, fs->datablock_bitmap->map + (i * block_size));
+  }
+  if (total_blocks % block_size != 0) {
+    current++;
+    clearBlock (block);
+    getStringAtBlock (0, block, (total_blocks % block_size), fs->datablock_bitmap->map + ((total_blocks / block_size) * block_size));
+  }
+  
+  // INODE
+  clearBlock (block);
+  
+  
   // COMPLETAR
   
   
@@ -197,10 +259,27 @@ void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size
 
 // FUNCOES AUXILIARES
 
-void copyIntToCharArray (char* array, int32_t* value) {
-  for (int i = 0; i < 4; i++) {
-    array[i] = (char) *(value + (i * sizeof(char)));
-  }
+int32_t getIntAtBlock (int32_t position, Datablock block) {
+  int32_t value;
+  memcpy ((void*) &value, block->content + position, sizeof (int32_t));
+  return value;
+}
+
+void setIntAtBlock (int32_t position, Datablock block, int32_t value) {
+  memcpy (block->content + position, (void*) &value, sizeof (int32_t));
+}
+
+void getStringAtBlock (int32_t position, Datablock block, int32_t size, char* string) {
+  memcpy (string, block->content + position, size * sizeof (char));
+}
+
+void setStringAtBlock (int32_t position, Datablock block, int32_t size, char* string) {
+  memcpy (block->content + position, (void*) string, size * sizeof (char));
+}
+
+void clearBlock (Datablock block) {
+  for (int i = 0; i < MAX_BLOCK_SIZE; i++)
+    block->content[i] = 0;
 }
 
 // TODO: Para todo codigo de create precisamos criar um codigo de free;

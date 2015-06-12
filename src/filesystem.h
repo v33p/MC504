@@ -175,4 +175,9 @@ void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size
 /*
   
  */
-void copyIntToCharArray (char* array, int32_t* value);
+int32_t getIntAtBlock (int32_t position, Datablock block);
+void setIntAtBlock (int32_t position, Datablock block, int32_t value);
+void getStringAtBlock (int32_t position, Datablock block, int32_t size, char* string);
+void setStringAtBlock (int32_t position, Datablock block, int32_t size, char* string);
+
+void clearBlock (Datablock block);
