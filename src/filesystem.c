@@ -133,9 +133,9 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   printf ("datablock bitmap\n");
 
   // INODES
-  int32_t inodes_per_blocks = bsize / INODE_SIZE; 
-  int32_t total_blocks_inodes = MAX_INODES / inodes_per_blocks;
-
+  int32_t inodes_per_block = bsize / INODE_SIZE; 
+  int32_t total_blocks_inodes = MAX_INODES / inodes_per_block;
+  /*
   Inode root = fs->inodes[fs->superblock->root_position];
 
   block->id = ++atual;
@@ -153,6 +153,20 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     block->id = ++atual;
     clearBlock (block);
     
+    writeBlock (atual, file, block, bsize);
+  }
+  */
+  Inode inode;
+  
+  for (i = 0; i < total_blocks_inodes; i++) {
+    block->id = ++atual;
+    clearBlock (block);
+    for (j = 0; j < inodes_per_block; j++) {
+      if (fs->inodes[(i * inodes_per_block)+j] != NULL) {
+	inode = fs->inodes[(i * inodes_per_block)+j];
+	setInodeAtBlock ((j*INODE_SIZE), block, inode);
+      }
+    }
     writeBlock (atual, file, block, bsize);
   }
 
