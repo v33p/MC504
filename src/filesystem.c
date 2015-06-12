@@ -96,7 +96,7 @@ Filesystem fileToFilesystem (char* file_name) {
   fseek (file, sizeof (int) * 5, SEEK_SET);
   fread (&block_size, sizeof (int), 1, file); 
   Filesystem fs = createFileSystem (block_size);
-  fseek (file, 0, SEEK_END);
+  fseek (file, 0, SEEK_SET);
   // COMPLETAR
   fclose (file);
   return fs;
