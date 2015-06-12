@@ -28,13 +28,17 @@
 1
 
 ;; Total de blocos para inode no menor caso
-(/ (* 1024 (+ 65 (* 4 400))) 512)
+(/ (* 1024 (+ 65 (* 4 30))) 512)
+370
+
 3330 ;; 400 blocos
 1730 ;; 200 blocos
 930  ;; 100 blocos
 
 ;; Total de blocos para inode no maior caso
-(/ (* 1024 (+ 65 (* 4 400))) 4096)
+(/ (* 1024 (+ 65 (* 4 30))) 4096)
+46
+
 416 ;; 400 blocos
 216 ;; 200 blocos
 116 ;; 100 blocos

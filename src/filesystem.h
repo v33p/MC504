@@ -32,7 +32,7 @@ typedef enum {false = 0, true = 1} Bool;
 // superblock
 typedef struct superblock {
   int magic_number;      // identificador do filesystem
-  struct inode* root_position;   // apontador para diretorio root
+  int root_position;   // apontador para diretorio root
   int number_of_inodes;  // numero de inodes em uso
   int number_of_blocks;  // numero de blocos em uso
   int block_size;    // tamanho do bloco de dado
@@ -46,7 +46,7 @@ typedef struct bitmap {
 // inode
 typedef struct inode {
   int number;                    // numero de identficacao 0 - 1023
-  struct inode* father;          // METADADO: apontador para o pai
+  int father;          // METADADO: apontador para o pai
   int permition;                 // METADADO: valor da permissao do arquivo
   int timestamp;                 // METADADO: time stamp convertido pra int 
   char type[INODE_TYPE_SIZE];    // METADADO: tipo do dado
@@ -125,7 +125,7 @@ Bitmap createBitmap (int size);
     char* name = nome do inode para consumo humano
     Bool dir = variavel booleana para indicar se e diretorio ou nao
  */
-Inode createInode (int number, Inode father, int permition, char* type, char* name, Bool dir);
+Inode createInode (int number, int father, int permition, char* type, char* name, Bool dir);
 
 /*
   FilesystemToFile: Dado uma estrutura de filesystem transforma ela num

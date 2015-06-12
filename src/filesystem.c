@@ -28,7 +28,7 @@ Filesystem createFileSystem (int block_size) {
   fs->datablock_bitmap = createBitmap (number_of_blocks);
   for (int i = 1; i < MAX_INODES; i++)
     fs->inodes[i] = NULL;
-  fs->inodes[0] = fs->superblock->root_position;
+  fs->inodes[0] = createInode (0, -1, 111, "", "", true);
   fs->first_datablock = NULL;
   //printf ("fs\n");
   return fs;
@@ -38,7 +38,7 @@ Filesystem createFileSystem (int block_size) {
 Superblock createSuperBlock (int block_size) {
   Superblock superblock = malloc (sizeof (superblock));
   superblock->magic_number = 0; // nao sei como configurar o magic number
-  superblock->root_position = createInode (0, NULL, 111, "", "", true);
+  superblock->root_position = 0;
   superblock->number_of_inodes = 1;
   superblock->number_of_blocks = 0; // precisa calcular
   superblock->block_size = block_size;
@@ -56,7 +56,7 @@ Bitmap createBitmap (int size) {
 }
 
 // CreateInode
-Inode createInode (int number, Inode father, int permition, char* type, char* name, Bool dir) {
+Inode createInode (int number, int father, int permition, char* type, char* name, Bool dir) {
   Inode inode = malloc (sizeof (inode));
   inode->number = number;
   inode->father = father;
@@ -77,17 +77,12 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   FILE* file = fopen (file_name, "w");
   if (file == NULL) error ("Null file.");
   for (int i = 0; i < FILE_SIZE; i++)
-    fputc ('0', file);
+    fputc (0, file);
   Datablock superblock = malloc (sizeof (datablock));
   superblock->id = 0;
   memcpy (superblock->content, (void*) &fs->superblock->block_size, sizeof (int));
-  /*copyIntToCharArray (superblock->content, &fs->superblock->magic_number);
-  //copyIntToCharArray (superblock->content+4, &fs->superblock->root_position);
-  copyIntToCharArray (superblock->content+8, &fs->superblock->number_of_inodes);
-  copyIntToCharArray (superblock->content+12, &fs->superblock->number_of_blocks);
-  copyIntToCharArray (superblock->content+16, &fs->superblock->block_size);
-  */// COMPLETAR
-  printf ("sb: %s\n", superblock->content);
+  // COMPLETAR
+  printf ("sb: %c %c %c %c\n", superblock->content[0], superblock->content[1], superblock->content[2], superblock->content[3]);
   writeBlock (0, file, superblock, fs->superblock->block_size);
   //printf ("%s\n", superblock->content);
   fclose (file);
@@ -98,7 +93,7 @@ Filesystem fileToFilesystem (char* file_name) {
   FILE* file = fopen (file_name, "r");
   int block_size;
   //void* pointer = &block_size; 
-  fseek (file, sizeof (int) * 5, SEEK_END);
+  fseek (file, sizeof (int) * 5, SEEK_SET);
   fread (&block_size, sizeof (int), 1, file); 
   Filesystem fs = createFileSystem (block_size);
   fseek (file, 0, SEEK_END);
@@ -112,14 +107,14 @@ Filesystem fileToFilesystem (char* file_name) {
 Datablock readBlock (int id, FILE* file, int block_size) {
   Datablock datablock = malloc (sizeof (datablock));
   datablock->id = id;
-  fseek (file, id * block_size, SEEK_END);
+  fseek (file, id * block_size, SEEK_SET);
   fread (datablock->content, sizeof (char), block_size, file);
   return datablock;
 }
 
 // WriteBlock
 void writeBlock (int id, FILE* file, Datablock datablock, int block_size) {
-  fseek (file, id * block_size, SEEK_END);
+  fseek (file, id * block_size, SEEK_SET);
   fwrite (datablock->content, sizeof (char), block_size, file); 
 }
 
