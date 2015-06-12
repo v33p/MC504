@@ -7,6 +7,7 @@
 */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -34,11 +35,11 @@ typedef enum {false = 0, true = 1} Bool;
 
 // superblock
 typedef struct superblock {
-  int magic_number;      // identificador do filesystem
-  int root_position;   // apontador para diretorio root
-  int number_of_inodes;  // numero de inodes em uso
-  int number_of_blocks;  // numero de blocos em uso
-  int block_size;    // tamanho do bloco de dado
+  int32_t magic_number;      // identificador do filesystem
+  int32_t root_position;   // apontador para diretorio root
+  int32_t number_of_inodes;  // numero de inodes em uso
+  int32_t number_of_blocks;  // numero de blocos em uso
+  int32_t block_size;    // tamanho do bloco de dado
 } superblock, *Superblock;
 
 // bitmap 
@@ -48,20 +49,20 @@ typedef struct bitmap {
 
 // inode
 typedef struct inode {
-  int number;                    // numero de identficacao 0 - 1023
-  int father;          // METADADO: apontador para o pai
-  int permition;                 // METADADO: valor da permissao do arquivo
-  int timestamp;                 // METADADO: time stamp convertido pra int 
+  int32_t number;                    // numero de identficacao 0 - 1023
+  int32_t father;          // METADADO: apontador para o pai
+  int32_t permition;                 // METADADO: valor da permissao do arquivo
+  int32_t timestamp;                 // METADADO: time stamp convertido pra int 
   char type[INODE_TYPE_SIZE];    // METADADO: tipo do dado
   char name[INODE_NAME_SIZE];    // METADADO: nome do arquivo
   char dir;                      // true = inode dir ou false = inode file
-  int number_of_blocks;          // Numero de blocks
-  int blocks[BLOCKS_PER_INODE];  // Lista de data blocks (?)
+  int32_t number_of_blocks;          // Numero de blocks
+  int32_t blocks[BLOCKS_PER_INODE];  // Lista de data blocks (?)
 } inode, *Inode;
 
 // datablock
 typedef struct datablock {
-  int id;
+  int32_t id;
   char content[MAX_BLOCK_SIZE];
 } datablock, *Datablock;
 
@@ -98,37 +99,37 @@ void warning (const char* message);
 blocos de tamanho 'block_size' tomando cuidado para nao ultrapassar o 
 overhead.
   param:
-    int block_size = tamanho de cada bloco
+    int32_t block_size = tamanho de cada bloco
  */
-Filesystem createFileSystem (int block_size);
+Filesystem createFileSystem (int32_t block_size);
 
 /*
   CreateSuperBlock: Cria uma estrutura Superblock com os valores padroes e com
 um total de 'number_of_blocks' de blocos de tamanho 'block_size'. 
   param:
-    int number_of_blocks = numero total de blocos do filesystem
-    int block_size = tamanho dos blocos do filesystem
+    int32_t number_of_blocks = numero total de blocos do filesystem
+    int32_t block_size = tamanho dos blocos do filesystem
  */
-Superblock createSuperBlock (int block_size);
+Superblock createSuperBlock (int32_t block_size);
 
 /*
   CreateBitmap: Cria um bitmap com vetor de char do tamanho de 'size'.
   param:
-    int size = tamanho do vetor do bitmap
+    int32_t size = tamanho do vetor do bitmap
  */
-Bitmap createBitmap (int size);
+Bitmap createBitmap (int32_t size);
 
 /*
   CreateInode: Cria um inode com alguns parametros.
   param:
-    int number = identificador unico do inode no filesystem
+    int32_t number = identificador unico do inode no filesystem
     Inode father = apontador para o pai desse inode
-    int permition = variavel de controle de permissao
+    int32_t permition = variavel de controle de permissao
     char* type = tipo do inode
     char* name = nome do inode para consumo humano
     char dir = variavel booleana para indicar se e diretorio ou nao
  */
-Inode createInode (int number, int father, int permition, char* type, char* name, char dir);
+Inode createInode (int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir);
 
 /*
   FilesystemToFile: Dado uma estrutura de filesystem transforma ela num
@@ -152,21 +153,21 @@ Filesystem fileToFilesystem (char* file_name);
   ReadBlock: Dado um id de um bloco e um file do filesystem, essa 
 funcao cria um datablock e retorna.
   param:
-    int id = indice do bloco que quer acessar
+    int32_t id = indice do bloco que quer acessar
     FILE* file = arquivo que representa o hd do filesystem
  */
-Datablock readBlock (int id, FILE* file, int block_size);
+Datablock readBlock (int32_t id, FILE* file, int32_t block_size);
 
 /*
   WriteBlcok: Dado um id de um bloco, um file do filesystem e um
 datablock, essa funcao sublistitui o valor do datablock no bloco
 cujo id e passado como parametro.
   param:
-    int id = indice do bloco que ira ser substituido
+    int32_t id = indice do bloco que ira ser substituido
     FILE* file = arquivo que representa o hd do filesystem
     Datablock datablock = bloco que substituira o bloco antigo.
  */
-void writeBlock (int id, FILE* file, Datablock datablock, int block_size);
+void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size);
 
 
 // FUNCOES AUXILIARES
@@ -174,4 +175,4 @@ void writeBlock (int id, FILE* file, Datablock datablock, int block_size);
 /*
   
  */
-void copyIntToCharArray (char* array, int* value);
+void copyIntToCharArray (char* array, int32_t* value);
