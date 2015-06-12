@@ -310,7 +310,21 @@ void setInodeAtBlock (int32_t position, Datablock block, Inode inode) {
   setStringAtBlock (position+(soi32*4)+INODE_TYPE_SIZE+INODE_NAME_SIZE, block, 1, &inode->dir);
   setIntAtBlock (position+(soi32*4)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, block, inode->number_of_blocks);
   // criar funcoa pra isso depois
-  memcpy (block->content+position+(soi32*4)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, (void*) inode->blocks, BLOCKS_PER_INODE * soi32);
+  memcpy (block->content+position+(soi32*5)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, (void*) inode->blocks, BLOCKS_PER_INODE * soi32);
+}
+
+void getInodeAtBlock (int32_t position, Datablock block, Inode inode) {
+  int32_t soi32 = sizeof (int32_t);
+  inode->number = getIntAtBlock (position, block);
+  inode->father = getIntAtBlock (position+soi32, block);
+  inode->permition = getIntAtBlock (position+(2*soi32), block);
+  inode->timestamp = getIntAtBlock (position+(3*soi32), block);
+  getStringAtBlock (position+(4*soi32), block, INODE_TYPE_SIZE, inode->type);
+  getStringAtBlock (position+(4*soi32)+INODE_TYPE_SIZE, block, INODE_NAME_SIZE, inode->name);
+  getStringAtBlock (position+(4*soi32)+INODE_TYPE_SIZE+INODE_NAME_SIZE, block, 1, &inode->dir);
+  inode->number_of_blocks = getIntAtBlock (position+(4*soi32)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, block);
+  // criar funcao pra isso depois
+  memcpy ((void *) inode->blocks, block->content+position+(soi32*5)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, BLOCKS_PER_INODE * soi32);
 }
  
 // TODO: Para todo codigo de create precisamos criar um codigo de free;
