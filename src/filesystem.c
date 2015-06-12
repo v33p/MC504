@@ -86,23 +86,29 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   int32_t bsize = fs->superblock->block_size;
   int32_t atual = 0;
   int32_t total_blocks = FILE_SIZE / bsize;
+
+  int32_t soi32 = sizeof (int32_t);
+  
   block->id = atual;
-  memcpy (block->content, (void*) &fs->superblock->magic_number, sizeof (int32_t));
-  memcpy (block->content+4, (void*) &fs->superblock->root_position, sizeof (int32_t));
-  memcpy (block->content+8, (void*) &fs->superblock->number_of_inodes, sizeof (int32_t));
-  memcpy (block->content+12, (void*) &fs->superblock->number_of_blocks, sizeof (int32_t));
-  memcpy (block->content+16, (void*) &fs->superblock->block_size, sizeof (int32_t));
+  setIntAtBlock (0, block, fs->superblock->magic_number);
+  setIntAtBlock (soi32, block, fs->superblock->root_position);
+  setIntAtBlock (soi32*2, block, fs->superblock->number_of_inodes);
+  setIntAtBlock (soi32*3, block, fs->superblock->number_of_blocks);
+  setIntAtBlock (soi32*4, block, fs->superblock->block_size);
   writeBlock (atual, file, block, fs->superblock->block_size);
 
   printf ("superblock\n");
   
   // INODE BITMAP
   block->id = ++atual;
-  memcpy (block->content, (void*) fs->inode_bitmap->map, MIN(bsize, 1024));
-  writeBlock (atual, file, block, fs->superblock->block_size);
+  clearBlock (block);
+  
+  setStringAtBlock (0, block, MIN(bsize, 1024), fs->inode_bitmap->map);
+  writeBlock (atual, file, block, bsize);
   if (bsize < 1024) {
     block->id = ++atual;
-    memcpy (block->content, (void*) fs->inode_bitmap->map+bsize, bsize);
+    clearBlock (block);
+    setStringAtBlock (0, block, bsize, fs->inode_bitmap->map + bsize);
     writeBlock (atual, file, block, bsize);
   }
 
@@ -111,15 +117,16 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   // DATABLOCK BITMAP
   for (i = 0; i < total_blocks/bsize; i++) {
     block->id = ++atual;
-    memcpy (block->content, (void*) fs->datablock_bitmap->map + (i*bsize), bsize);
+    clearBlock (block);
+    
+    setStringAtBlock (0, block, bsize, fs->datablock_bitmap->map + (i*bsize));
     writeBlock (atual, file, block, bsize);
   }
   if (total_blocks % bsize != 0) {
     block->id = ++atual;
-    memcpy (block->content, (void*) fs->datablock_bitmap->map + ((total_blocks/bsize) * bsize), total_blocks % bsize);
-    // resto do bloco eh lixo
-    for (j = total_blocks % bsize; j < bsize; j++)
-      block->content[j] = 0;
+    clearBlock (block);
+
+    setStringAtBlock (0, block, (total_blocks % bsize), fs->datablock_bitmap->map + ((total_blocks/bsize) * bsize));
     writeBlock (atual, file, block, bsize);
   }
 
@@ -128,20 +135,13 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   // INODES
   int32_t inodes_per_blocks = bsize / INODE_SIZE; 
   int32_t total_blocks_inodes = MAX_INODES / inodes_per_blocks;
+
   Inode root = fs->inodes[fs->superblock->root_position];
+
   block->id = ++atual;
-  memcpy (block->content, (void*) &root->number, sizeof (int32_t));
-  memcpy (block->content + 4, (void*) &root->father, sizeof (int32_t));
-  memcpy (block->content + 8, (void*) &root->permition, sizeof (int32_t));
-  memcpy (block->content + 12, (void*) &root->timestamp, sizeof (int32_t));
-  memcpy (block->content + 16, (void*) root->type, INODE_TYPE_SIZE * sizeof (char));
-  memcpy (block->content + (16 + INODE_TYPE_SIZE), (void*) root->name, INODE_NAME_SIZE * sizeof (char));
-  memcpy (block->content + (16 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->dir, sizeof (char));
-  memcpy (block->content + (17 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->number_of_blocks, sizeof (int32_t));
-  memcpy (block->content + (21 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) root->blocks, BLOCKS_PER_INODE * sizeof (int32_t));
-  for (i = (21 + INODE_TYPE_SIZE + INODE_NAME_SIZE + (4 * BLOCKS_PER_INODE)); i < bsize; i++)
-    block->content[i] = 0;
-  
+  clearBlock (block);
+
+  setInodeAtBlock (0, block, root);
   // escrevendo root
   writeBlock (atual, file, block, bsize);
   
@@ -151,12 +151,17 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   // escrevendo outros inodes
   for (i = 1; i < total_blocks_inodes; i++) {
     block->id = ++atual;
+    clearBlock (block);
+    
     writeBlock (atual, file, block, bsize);
   }
 
   printf ("inodes\n");
 
   /*
+    ISSO PRECISA IR PARA O CREATE FILESYSTEM DE ALGUMA FORMA
+DEPOIS EU TRABALHO NISSO
+
   fs->superblock->number_of_blocks = atual;
   for (i = 0; i < atual; i++)
     fs->datablock_bitmap->map[i] = 1;
@@ -196,12 +201,12 @@ Filesystem fileToFilesystem (char* file_name) {
   fs->superblock->number_of_inodes = getIntAtBlock (soi32*2, block);
   fs->superblock->number_of_blocks = getIntAtBlock (soi32*3, block);
 
-  /*printf ("Testando: %d %d %d %d %d\n", fs->superblock->magic_number,
+  printf ("Testando: %d %d %d %d %d\n", fs->superblock->magic_number,
 	  fs->superblock->root_position,
 	  fs->superblock->number_of_inodes,
 	  fs->superblock->number_of_blocks,
 	  fs->superblock->block_size);
-  */
+  
   
   // INODE BITMAP
   clearBlock (block);
@@ -231,11 +236,9 @@ Filesystem fileToFilesystem (char* file_name) {
   
   // INODE
   clearBlock (block);
-  
+  // vai ser foda.
   
   // COMPLETAR
-  
-  
   
   fclose (file);
   return fs;
@@ -282,6 +285,20 @@ void clearBlock (Datablock block) {
     block->content[i] = 0;
 }
 
+void setInodeAtBlock (int32_t position, Datablock block, Inode inode) {
+  int32_t soi32 = sizeof (int32_t);
+  setIntAtBlock (position, block, inode->number);
+  setIntAtBlock (position+soi32, block, inode->father);
+  setIntAtBlock (position+(soi32*2), block, inode->permition);
+  setIntAtBlock (position+(soi32*3), block, inode->timestamp);
+  setStringAtBlock (position+(soi32*4), block, INODE_TYPE_SIZE, inode->type);
+  setStringAtBlock (position+(soi32*4)+INODE_TYPE_SIZE, block, INODE_NAME_SIZE, inode->name);
+  setStringAtBlock (position+(soi32*4)+INODE_TYPE_SIZE+INODE_NAME_SIZE, block, 1, &inode->dir);
+  setIntAtBlock (position+(soi32*4)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, block, inode->number_of_blocks);
+  // criar funcoa pra isso depois
+  memcpy (block->content+position+(soi32*4)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, (void*) inode->blocks, BLOCKS_PER_INODE * soi32);
+}
+ 
 // TODO: Para todo codigo de create precisamos criar um codigo de free;
 // TODO: FilesystemToFile
 // TODO: FileToFilesystem

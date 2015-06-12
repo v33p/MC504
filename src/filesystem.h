@@ -180,4 +180,7 @@ void setIntAtBlock (int32_t position, Datablock block, int32_t value);
 void getStringAtBlock (int32_t position, Datablock block, int32_t size, char* string);
 void setStringAtBlock (int32_t position, Datablock block, int32_t size, char* string);
 
+void setInodeAtBlock (int32_t position, Datablock block, Inode inode);
+
 void clearBlock (Datablock block);
+
