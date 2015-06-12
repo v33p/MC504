@@ -132,6 +132,11 @@ Bitmap createBitmap (int32_t size);
 Inode createInode (int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir);
 
 /*
+  
+ */
+void adjustInitialFileSystem (Filesystem fs, int32_t block_size);
+
+/*
   FilesystemToFile: Dado uma estrutura de filesystem transforma ela num
 arquivo passado como parametro para funcao.
   param:

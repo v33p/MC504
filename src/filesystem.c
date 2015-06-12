@@ -24,9 +24,10 @@ Filesystem createFileSystem (int32_t block_size) {
   Filesystem fs = malloc (sizeof (filesystem));
   int32_t number_of_blocks = FILE_SIZE / block_size;
   fs->superblock = createSuperBlock (block_size);
-  fs->inode_bitmap = createBitmap (1024);
+  fs->inode_bitmap = createBitmap (MAX_INODES);
   fs->inode_bitmap->map[0] = 1;
   fs->datablock_bitmap = createBitmap (number_of_blocks);
+  adjustInitialFileSystem (fs, block_size);
   for (int32_t i = 1; i < MAX_INODES; i++)
     fs->inodes[i] = NULL;
   fs->inodes[0] = createInode (0, -1, 111, "", "", 1);
@@ -73,6 +74,19 @@ Inode createInode (int32_t number, int32_t father, int32_t permition, char* type
   return inode;
 }
 
+// 
+void adjustInitialFileSystem (Filesystem fs, int32_t block_size) {
+  int32_t inodes_per_block = block_size / INODE_SIZE;
+  int32_t blocks_inodes = MAX_INODES / inodes_per_block;
+  int32_t blocks_inode_bitmap = MAX_INODES / block_size;
+  int32_t blocks_datablock_bitmap = (FILE_SIZE / block_size) / block_size;
+  int32_t blocks_superblock = 1;
+  fs->superblock->number_of_blocks = blocks_superblock + blocks_inode_bitmap + blocks_datablock_bitmap + blocks_inodes;
+  for (int32_t i = 0; i < fs->superblock->number_of_blocks; i++)
+    fs->datablock_bitmap->map[i] = 1;
+  
+}
+
 // FilesystemToFile
 void filesystemToFile (Filesystem fs, char* file_name) {
   FILE* file = fopen (file_name, "w");
@@ -103,9 +117,9 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   block->id = ++atual;
   clearBlock (block);
   
-  setStringAtBlock (0, block, MIN(bsize, 1024), fs->inode_bitmap->map);
+  setStringAtBlock (0, block, MIN(bsize, MAX_INODES), fs->inode_bitmap->map);
   writeBlock (atual, file, block, bsize);
-  if (bsize < 1024) {
+  if (bsize < MAX_INODES) {
     block->id = ++atual;
     clearBlock (block);
     setStringAtBlock (0, block, bsize, fs->inode_bitmap->map + bsize);
@@ -172,17 +186,9 @@ void filesystemToFile (Filesystem fs, char* file_name) {
 
   printf ("inodes\n");
 
-  /*
-    ISSO PRECISA IR PARA O CREATE FILESYSTEM DE ALGUMA FORMA
-DEPOIS EU TRABALHO NISSO
-
-  fs->superblock->number_of_blocks = atual;
-  for (i = 0; i < atual; i++)
-    fs->datablock_bitmap->map[i] = 1;
-  */
+  if (fs->superblock->number_of_blocks == atual)
+    printf ("confirmed\n");
   
-  
-  //printf ("%s\n", superblock->content);
   fclose (file);
 }
 
@@ -226,8 +232,8 @@ Filesystem fileToFilesystem (char* file_name) {
   clearBlock (block);
   current++;
   block = readBlock (current, file, block_size);
-  getStringAtBlock (0, block, MIN(block_size, 1024), fs->inode_bitmap->map);
-  if (block_size < 1024) {
+  getStringAtBlock (0, block, MIN(block_size, MAX_INODES), fs->inode_bitmap->map);
+  if (block_size < MAX_INODES) {
     current++;
     block = readBlock (current, file, block_size);
     getStringAtBlock (0, block, block_size, fs->inode_bitmap->map+block_size);
