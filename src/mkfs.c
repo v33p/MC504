@@ -23,12 +23,13 @@ void parseInput (int argc, char** argv) {
     if (argc < 4) error ("Missing parameters."); 
     block_size = parseSize (argv[2]);
     Filesystem fs = createFileSystem (block_size);
-    //filesystemToFile (fs, argv[3]);
+    filesystemToFile (fs, argv[3]);
+    fileToFilesystem (argv[3]);
   }
   else if (argc == 2) {
     // Criar arquivo com valor default.
     Filesystem fs = createFileSystem (block_size);
-    //filesystemToFile (fs, argv[1]);
+    filesystemToFile (fs, argv[1]);
   }
   else {
     error ("Wrong parameters.");
