@@ -10,4 +10,4 @@ mkfs: src/mkfs.c src/mkfs.h
 bash.fs: src/bash.c src/bash.h
 	gcc -std=c11 src/bash.c -o bash.fs
 clean:
-	rm mkfs bash.fs
+	rm mkfs fs bash.fs

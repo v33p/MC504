@@ -28,7 +28,7 @@ Filesystem createFileSystem (int block_size) {
   fs->datablock_bitmap = createBitmap (number_of_blocks);
   for (int i = 1; i < MAX_INODES; i++)
     fs->inodes[i] = NULL;
-  fs->inodes[0] = createInode (0, -1, 111, "", "", true);
+  fs->inodes[0] = createInode (0, -1, 111, "", "", 1);
   fs->first_datablock = NULL;
   //printf ("fs\n");
   return fs;
@@ -48,7 +48,7 @@ Superblock createSuperBlock (int block_size) {
 
 // CreateBitmap
 Bitmap createBitmap (int size) {
-  Bool* map = malloc (size * sizeof (Bool));
+  char* map = malloc (size * sizeof (char));
   Bitmap bitmap = malloc (sizeof (bitmap));
   bitmap->map = map;
   //printf ("bm\n");
@@ -56,7 +56,7 @@ Bitmap createBitmap (int size) {
 }
 
 // CreateInode
-Inode createInode (int number, int father, int permition, char* type, char* name, Bool dir) {
+Inode createInode (int number, int father, int permition, char* type, char* name, char dir) {
   Inode inode = malloc (sizeof (inode));
   inode->number = number;
   inode->father = father;
@@ -75,15 +75,88 @@ Inode createInode (int number, int father, int permition, char* type, char* name
 // FilesystemToFile
 void filesystemToFile (Filesystem fs, char* file_name) {
   FILE* file = fopen (file_name, "w");
+  int i, j;
   if (file == NULL) error ("Null file.");
-  for (int i = 0; i < FILE_SIZE; i++)
+  for (i = 0; i < FILE_SIZE; i++)
     fputc (0, file);
-  Datablock superblock = malloc (sizeof (datablock));
-  superblock->id = 0;
-  memcpy (superblock->content, (void*) &fs->superblock->block_size, sizeof (int));
-  // COMPLETAR
-  printf ("sb: %c %c %c %c\n", superblock->content[0], superblock->content[1], superblock->content[2], superblock->content[3]);
-  writeBlock (0, file, superblock, fs->superblock->block_size);
+  
+  // SUPERBLOCK
+  Datablock block = malloc (sizeof (datablock));
+  int bsize = fs->superblock->block_size;
+  int atual = 0;
+  int total_blocks = FILE_SIZE / bsize;
+  block->id = atual;
+  memcpy (block->content, (void*) &fs->superblock->magic_number, sizeof (int));
+  memcpy (block->content+4, (void*) &fs->superblock->root_position, sizeof (int));
+  memcpy (block->content+8, (void*) &fs->superblock->number_of_inodes, sizeof (int));
+  memcpy (block->content+12, (void*) &fs->superblock->number_of_blocks, sizeof (int));
+  memcpy (block->content+16, (void*) &fs->superblock->block_size, sizeof (int));
+  writeBlock (atual, file, block, fs->superblock->block_size);
+
+  printf ("superblock\n");
+  
+  // INODE BITMAP
+  block->id = ++atual;
+  memcpy (block->content, (void*) fs->inode_bitmap->map, MIN(bsize, 1024));
+  writeBlock (atual, file, block, fs->superblock->block_size);
+  if (bsize < 1024) {
+    block->id = ++atual;
+    memcpy (block->content, (void*) fs->inode_bitmap->map+bsize, bsize);
+    writeBlock (atual, file, block, bsize);
+  }
+
+  printf ("inode bitmap\n");
+
+  // DATABLOCK BITMAP
+  for (i = 0; i < total_blocks/bsize; i++) {
+    block->id = ++atual;
+    memcpy (block->content, (void*) fs->datablock_bitmap->map + (i*bsize), bsize);
+    writeBlock (atual, file, block, bsize);
+  }
+  if (total_blocks % bsize != 0) {
+    block->id = ++atual;
+    memcpy (block->content, (void*) fs->datablock_bitmap->map + ((total_blocks/bsize) * bsize), total_blocks % bsize);
+    // resto do bloco eh lixo
+    for (j = total_blocks % bsize; j < bsize; j++)
+      block->content[j] = 0;
+    writeBlock (atual, file, block, bsize);
+  }
+
+  printf ("datablock bitmap\n");
+
+  // INODES
+  int inodes_per_blocks = bsize / INODE_SIZE; 
+  int total_blocks_inodes = MAX_INODES / inodes_per_blocks;
+  Inode root = fs->inodes[fs->superblock->root_position];
+  block->id = ++atual;
+  memcpy (block->content, (void*) &root->number, sizeof (int));
+  memcpy (block->content+4, (void*) &root->father, sizeof (int));
+  memcpy (block->content+8, (void*) &root->permition, sizeof (int));
+  memcpy (block->content+12, (void*) &root->timestamp, sizeof (int));
+  memcpy (block->content+16, (void*) root->type, INODE_TYPE_SIZE * sizeof (char));
+  memcpy (block->content+ (16 + INODE_TYPE_SIZE), (void*) root->name, INODE_NAME_SIZE * sizeof (char));
+  memcpy (block->content+ (16 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->dir, sizeof (char));
+  memcpy (block->content + (17 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) &root->number_of_blocks, sizeof (int));
+  memcpy (block->content + (21 + INODE_TYPE_SIZE + INODE_NAME_SIZE), (void*) root->blocks, BLOCKS_PER_INODE * sizeof (int));
+  for (i = (21 + INODE_TYPE_SIZE + INODE_NAME_SIZE + (4 * BLOCKS_PER_INODE)); i < bsize; i++)
+    block->content[i] = 0;
+
+  printf ("suruba\n");
+  
+  // escrevendo root
+  writeBlock (atual, file, block, bsize);
+  
+  // zerando conteudo
+  for (i = 0; i < bsize; i++)
+    block->content[i] = 0;
+  // escrevendo outros inodes
+  for (i = 1; i < total_blocks_inodes; i++) {
+    block->id = ++atual;
+    writeBlock (atual, file, block, bsize);
+  }
+
+  printf ("inodes\n");
+  
   //printf ("%s\n", superblock->content);
   fclose (file);
 }

@@ -20,9 +20,12 @@
 #define MAX_INODES 1024           // 1Kb
 #define MAX_BLOCKS_PER_INODE 1024 // 1Kb
 #define BLOCKS_PER_INODE 30       // 
-#define INODE_SIZE 1665           //  
+#define INODE_SIZE 185           //  
 #define INODE_TYPE_SIZE 4
 #define INODE_NAME_SIZE 40
+
+/**/
+#define MIN(a,b) ((a)>(b) ? (b) : (a)) 
 
 /* ENUM */
 typedef enum {false = 0, true = 1} Bool;
@@ -40,7 +43,7 @@ typedef struct superblock {
 
 // bitmap 
 typedef struct bitmap {
-  Bool* map; // vetor de booleanos = mapa de bits
+  char* map; // vetor de booleanos = mapa de bits
 } bitmap, *Bitmap;
 
 // inode
@@ -51,7 +54,7 @@ typedef struct inode {
   int timestamp;                 // METADADO: time stamp convertido pra int 
   char type[INODE_TYPE_SIZE];    // METADADO: tipo do dado
   char name[INODE_NAME_SIZE];    // METADADO: nome do arquivo
-  Bool dir;                      // true = inode dir ou false = inode file
+  char dir;                      // true = inode dir ou false = inode file
   int number_of_blocks;          // Numero de blocks
   int blocks[BLOCKS_PER_INODE];  // Lista de data blocks (?)
 } inode, *Inode;
@@ -109,7 +112,7 @@ um total de 'number_of_blocks' de blocos de tamanho 'block_size'.
 Superblock createSuperBlock (int block_size);
 
 /*
-  CreateBitmap: Cria um bitmap com vetor de Bool do tamanho de 'size'.
+  CreateBitmap: Cria um bitmap com vetor de char do tamanho de 'size'.
   param:
     int size = tamanho do vetor do bitmap
  */
@@ -123,9 +126,9 @@ Bitmap createBitmap (int size);
     int permition = variavel de controle de permissao
     char* type = tipo do inode
     char* name = nome do inode para consumo humano
-    Bool dir = variavel booleana para indicar se e diretorio ou nao
+    char dir = variavel booleana para indicar se e diretorio ou nao
  */
-Inode createInode (int number, int father, int permition, char* type, char* name, Bool dir);
+Inode createInode (int number, int father, int permition, char* type, char* name, char dir);
 
 /*
   FilesystemToFile: Dado uma estrutura de filesystem transforma ela num
