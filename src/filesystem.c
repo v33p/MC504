@@ -60,15 +60,20 @@ Bitmap createBitmap (int32_t size) {
 // createInode
 Inode createInode (int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir) {
   Inode inode = malloc (sizeof (inode));
+  int32_t i;
   inode->number = number;
   inode->father = father;
   inode->permition = permition;
   inode->timestamp = (int32_t) time(NULL);
+  for (i = 0; i < INODE_NAME_SIZE; i++)
+    inode->name[i] = '\0';
+  for (i = 0; i < INODE_TYPE_SIZE; i++)
+    inode->type[i] = '\0';
   strcpy (inode->type, type);
   strcpy (inode->name, name);
   inode->dir = dir;
   inode->number_of_blocks = 0;
-  for (int32_t i = 0; i < BLOCKS_PER_INODE; i++)
+  for (i = 0; i < BLOCKS_PER_INODE; i++)
     inode->blocks[i] = -1;
   //printf ("i\n");
   return inode;
@@ -266,7 +271,7 @@ Filesystem fileToFilesystem (char* file_name) {
     }
   }
 
-  printFilesystem (fs);
+  //printFilesystem (fs);
   
   fclose (file);
   return fs;
@@ -374,12 +379,7 @@ void printInode (Inode inode) {
   printf ("father: %d\n", inode->father);
   printf ("permitions: %d\n", inode->permition);
   printf ("timestamp: %d\n", inode->timestamp);
-  printf ("Name: ");
-  for (int32_t i = 0; i < INODE_NAME_SIZE; i++)
-    if (inode->name[i] != 0) printf("%c", inode->name[i]);
-  printf (".");
-  for (int32_t i = 0; i < INODE_TYPE_SIZE; i++)
-    if (inode->type[i] != 0) printf("%c", inode->type[i]);
+  printf ("Name: %s.%s\n", inode->name[i], inode->type[i]);
   printf ("\ndir: %c\n", inode->dir);
   printf ("number of blocks: %d\n", inode->number_of_blocks);
 }
