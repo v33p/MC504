@@ -197,7 +197,7 @@ Filesystem fileToFilesystem (char* file_name) {
   int32_t soi32 = sizeof (int32_t);
   int32_t current = 0;
 
-  int32_t i;
+  int32_t i, j;
   
   // CHECANDO FILESYSTEM
   int32_t magic_number;
@@ -261,7 +261,7 @@ Filesystem fileToFilesystem (char* file_name) {
       if (value != (i * inodes_per_block)+j) {
 	inode = malloc (sizeof (inode));
 	getInodeAtBlock ((j*INODE_SIZE), block, inode);
-	fs->inode[(i * inodes_per_block) + j] = inode;
+	fs->inodes[(i * inodes_per_block) + j] = inode;
       }
     }
   }
