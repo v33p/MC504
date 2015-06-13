@@ -27,6 +27,7 @@
 
 /**/
 #define MIN(a,b) ((a)>(b) ? (b) : (a)) 
+#define MAX(a,b) ((a)<(b) ? (b) : (a))
 
 /* ENUM */
 typedef enum {false = 0, true = 1} Bool;
@@ -181,12 +182,43 @@ void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size
   
  */
 int32_t getIntAtBlock (int32_t position, Datablock block);
+/*
+ */
 void setIntAtBlock (int32_t position, Datablock block, int32_t value);
+/*
+ */
 void getStringAtBlock (int32_t position, Datablock block, int32_t size, char* string);
+/*
+ */
 void setStringAtBlock (int32_t position, Datablock block, int32_t size, char* string);
-
+/*
+ */
 void setInodeAtBlock (int32_t position, Datablock block, Inode inode);
+/*
+ */
 void getInodeAtBlock (int32_t position, Datablock block, Inode inode);
-
+/*
+ */
 void clearBlock (Datablock block);
 
+// PRINTERS
+
+/*
+ */
+void printSuperblock (Superblock superblock);
+
+/*
+ */
+void printBitmap (Bitmap bm, int32_t size);
+
+/*
+ */
+void printInode (Inode inode);
+
+/*
+ */
+void printAllInodes (Filesystem fs);
+
+/*
+ */
+void printFilesystem (Filesystem fs);
