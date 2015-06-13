@@ -77,11 +77,9 @@ Inode createInode (int32_t number, int32_t father, int32_t permition, char* type
 // adjustInitialFileSystem
 void adjustInitialFileSystem (Filesystem fs, int32_t block_size) {
   int32_t inodes_per_block = block_size / INODE_SIZE;
-  int32_t blocks_inodes = MAX_INODES / inodes_per_block;
-  if (MAX_INODES % inodes_per_block != 0) blocks_inodes++;
-  int32_t blocks_inode_bitmap = MAX((MAX_INODES / block_size), 1);
-  int32_t blocks_datablock_bitmap = (FILE_SIZE / block_size) / block_size;
-  if ((FILE_SIZE / block_size) % block_size != 0) blocks_datablock_bitmap++;
+  int32_t blocks_inodes = (MAX_INODES + inodes_per_block - 1) / inodes_per_block; //Pega teto
+  int32_t blocks_inode_bitmap = (MAX_INODES + block_size - 1) / block_size; //Pega teto
+  int32_t blocks_datablock_bitmap = ((FILE_SIZE / block_size) + block_size - 1) / block_size; //Pega teto
   int32_t blocks_superblock = 1;
   fs->superblock->number_of_blocks = blocks_superblock + blocks_inode_bitmap + blocks_datablock_bitmap + blocks_inodes;
   for (int32_t i = 0; i < fs->superblock->number_of_blocks; i++)
@@ -205,7 +203,7 @@ Filesystem fileToFilesystem (char* file_name) {
   int32_t magic_number;
   fread (&magic_number, soi32, 1, file); 
   if (magic_number != 119785)
-    error ("Cannot read this filesystem"); 
+    error ("Magic Number mismatch! Cannot read this filesystem"); 
 
   // pegando tamanho do bloco
   int32_t block_size;
@@ -316,7 +314,7 @@ void setStringAtBlock (int32_t position, Datablock block, int32_t size, char* st
 
 // clearBlock
 void clearBlock (Datablock block) {
-  for (int i = 0; i < MAX_BLOCK_SIZE; i++)
+ for (int i = 0; i < MAX_BLOCK_SIZE; i++)
     block->content[i] = 0;
 }
 
