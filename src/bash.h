@@ -16,7 +16,8 @@
 #include "commands/rm.c"
 
 /* DEFINITIONS */
-
+#define BUFFER_SIZE 256
+#define COMMAND_SIZE 256
 
 /* ENUM */
 
@@ -39,3 +40,21 @@ necessarias para tratar determinado problema.
     char** argv = vetor de strings de entrada
  */
 void parseInput (int argc, char** argv);
+
+/*
+ * 	Bash: Modo Bash, fica em um loop recebendo comandos e chamando as
+ * respectivas funcoes para tratar delas.
+ * Comandos:
+ * ls [-ls] - lista entradas do diretorio corrente. -l mostra tamanho gasto por blocos
+ * chmod <permissoes> <alvo> - modifica permissoes de <alvo> para <permissoes>
+ * mkdir <nome_dir> - cria diretorio chamado <nome_dir>
+ * chdir <nome_dir> - muda diretorio corrente para <nome_dir>
+ * rm <alvo> - remove <alvo>
+ * echo <dado> <alvo> - salva <dado> em <alvo> (overwrite)
+ * cat <alvo> - print do conteudo de <alvo>
+ * exit - termina o bash mode
+ * 	param:
+ * 		char* file_name = nome do arquivo do filesystem
+*/
+
+void bash (char *file_name);

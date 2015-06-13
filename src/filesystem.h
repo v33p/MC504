@@ -123,7 +123,7 @@ Bitmap createBitmap (int32_t size);
   CreateInode: Cria um inode com alguns parametros.
   param:
     int32_t number = identificador unico do inode no filesystem
-    Inode father = apontador para o pai desse inode
+    int32_t father = apontador para o pai desse inode
     int32_t permition = variavel de controle de permissao
     char* type = tipo do inode
     char* name = nome do inode para consumo humano
