@@ -190,7 +190,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
 
   //printf ("inodes\n");
 
-  printFilesystem (fs);
+  //printFilesystem (fs);
   
   fclose (file);
 }
@@ -271,7 +271,7 @@ Filesystem fileToFilesystem (char* file_name) {
     }
   }
 
-  //printFilesystem (fs);
+  printFilesystem (fs);
   
   fclose (file);
   return fs;
@@ -368,8 +368,10 @@ void printSuperblock (Superblock sb) {
 // printBitmap
 void printBitmap (Bitmap bm, int32_t size) {
   printf ("Bitmap:\n");
-  for (int32_t i = 0; i < size; i++)
-    printf ("%c ", bm->map[i]);
+  for (int32_t i = 0; i < size; i++) {
+    if (bm->map[i] == 0) printf ("0 ");
+    else printf ("1 ");
+  }
   printf ("\n");
 }
 
@@ -379,8 +381,10 @@ void printInode (Inode inode) {
   printf ("father: %d\n", inode->father);
   printf ("permitions: %d\n", inode->permition);
   printf ("timestamp: %d\n", inode->timestamp);
-  printf ("Name: %s.%s\n", inode->name[i], inode->type[i]);
-  printf ("\ndir: %c\n", inode->dir);
+  printf ("Name: %s.%s\n", inode->name, inode->type);
+  if (inode->dir == 0) printf ("dir: nao\n");
+  else printf ("dir: sim\n");
+  //printf ("dir: %c\n", inode->dir);
   printf ("number of blocks: %d\n", inode->number_of_blocks);
 }
 
