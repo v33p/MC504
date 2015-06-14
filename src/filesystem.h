@@ -41,6 +41,7 @@ typedef struct superblock {
   int32_t number_of_inodes;  // numero de inodes em uso
   int32_t number_of_blocks;  // numero de blocos em uso
   int32_t block_size;    // tamanho do bloco de dado
+  int32_t number_of_dir;
 } superblock, *Superblock;
 
 // bitmap

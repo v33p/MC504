@@ -33,8 +33,8 @@ void parseInput (int argc, char** argv) {
   }
   else if (strcmp (argv[1], "-d") == 0) {
     //-d <arquivo_fs>: imprime ("Used Inodes: %i \n Used Directories: %i \n Used Data Blocks: %i\n)
-	//Filesystem fs = fileToFilesystem (argv[2]);
-	//printf("Used Inodes: %i \n Used Directories: %i \n Used Data Blocks: %i\n", fs->superblock->number_of_inodes, fs->superblock->number_of_dir, fs->superblock->number_of_blocks);
+	Filesystem fs = fileToFilesystem (argv[2]);
+	printf("Used Inodes: %i \n Used Directories: %i \n Used Data Blocks: %i\n", fs->superblock->number_of_inodes, fs->superblock->number_of_dir, fs->superblock->number_of_blocks);
   }
   else {
     error ("Wrong parameters.");

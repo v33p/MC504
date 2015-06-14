@@ -45,6 +45,7 @@ Superblock createSuperBlock (int32_t block_size) {
   superblock->number_of_inodes = 1;
   superblock->number_of_blocks = 0; // precisa calcular
   superblock->block_size = block_size;
+  superblock->number_of_dir = 1;
   return superblock;
 }
 
@@ -111,6 +112,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   setIntAtBlock (soi32*2, block, fs->superblock->number_of_inodes);
   setIntAtBlock (soi32*3, block, fs->superblock->number_of_blocks);
   setIntAtBlock (soi32*4, block, fs->superblock->block_size);
+  setIntAtBlock (soi32*5, block, fs->superblock->number_of_dir);
   writeBlock (atual, file, block, fs->superblock->block_size);
 
   // INODE BITMAP
@@ -199,6 +201,7 @@ Filesystem fileToFilesystem (char* file_name) {
   fs->superblock->root_position = getIntAtBlock (soi32, block);
   fs->superblock->number_of_inodes = getIntAtBlock (soi32*2, block);
   fs->superblock->number_of_blocks = getIntAtBlock (soi32*3, block);
+  fs->superblock->number_of_dir = getIntAtBlock (soi32*5, block);
 
   // INODE BITMAP
   clearBlock (block);
