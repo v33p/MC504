@@ -22,7 +22,7 @@ void parseInput (int argc, char** argv) {
   if (strcmp ("-b", argv[1]) == 0) {
     if (argc < 4) error ("Missing parameters."); 
     block_size = parseSize (argv[2]);
-    Filesystem fs = createFileSystem (block_size);
+    Filesystem fs = createFileSystem (block_size, argv[3]);
     filesystemToFile (fs, argv[3]);
   }
   // TESTE APENAS DEPOIS PRECISAMOS COMENTAR
@@ -31,7 +31,7 @@ void parseInput (int argc, char** argv) {
   }
   else if (argc == 2) {
     // Criar arquivo com valor default.
-    Filesystem fs = createFileSystem (block_size);
+    Filesystem fs = createFileSystem (block_size, argv[1]);
     filesystemToFile (fs, argv[1]);
   }
   else {

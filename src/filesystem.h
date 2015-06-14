@@ -69,6 +69,7 @@ typedef struct datablock {
 
 // file system
 typedef struct filesystem {
+  char* file_name;
   Superblock superblock;    // 20B
   Bitmap inode_bitmap;      // 1024B
   Bitmap datablock_bitmap;  // X B
@@ -102,7 +103,7 @@ overhead.
   param:
     int32_t block_size = tamanho de cada bloco
  */
-Filesystem createFileSystem (int32_t block_size);
+Filesystem createFileSystem (int32_t block_size, char* file_name);
 
 /*
   CreateSuperBlock: Cria uma estrutura Superblock com os valores padroes e com
@@ -165,6 +166,10 @@ funcao cria um datablock e retorna.
 Datablock readBlock (int32_t id, FILE* file, int32_t block_size);
 
 /*
+ */
+Datablock readBlockByFilesystem (int32_t id, Filesystem fs); 
+
+/*
   WriteBlock: Dado um id de um bloco, um file do filesystem e um
 datablock, essa funcao sublistitui o valor do datablock no bloco
 cujo id e passado como parametro.
@@ -185,6 +190,19 @@ void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size
  *      Filesystem fs: apontador para o fs
  */
 int32_t isInDir(char* child, Inode dir, Filesystem fs);
+
+/*
+ */
+Inode searchInodeOnDirByName (Filesystem fs, Inode dir, char* name);
+
+/*
+ */
+Inode searchInodeOnDirByValue (Filesystem fs, Inode dir, int32_t value);
+
+/*
+ */
+int32_t searchBlockOnInodeByValue (Filesystem fs, Inode inode, int32_t value);
+
 // FUNCOES AUXILIARES
 
 /*

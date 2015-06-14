@@ -20,9 +20,11 @@ void warning (const char* message) {
 }
 
 // createFileSystem
-Filesystem createFileSystem (int32_t block_size) {
+Filesystem createFileSystem (int32_t block_size, char* file_name) {
   Filesystem fs = malloc (sizeof (filesystem));
   int32_t number_of_blocks = FILE_SIZE / block_size;
+  fs->file_name = malloc (strlen (file_name) * sizeof (char));
+  strcpy (file_name, fs->file_name);
   fs->superblock = createSuperBlock (block_size);
   fs->inode_bitmap = createBitmap (MAX_INODES);
   fs->inode_bitmap->map[0] = 1;
@@ -182,7 +184,7 @@ Filesystem fileToFilesystem (char* file_name) {
   int32_t block_size;
   fseek (file, soi32 * 4, SEEK_SET);
   fread (&block_size, soi32, 1, file);
-  Filesystem fs = createFileSystem (block_size);
+  Filesystem fs = createFileSystem (block_size, file_name);
 
   /* if (fs->inodes[0] != NULL) {
     Inode root = fs->inodes[0];
@@ -260,6 +262,16 @@ Datablock readBlock (int32_t id, FILE* file, int32_t block_size) {
   return datablock;
 }
 
+// other readBlock
+Datablock readBlockByFilesystem (int32_t id, Filesystem fs) {
+  Datablock datablock = malloc (sizeof (datablock));
+  FILE* file = fopen (fs->file_name, "r");
+  datablock->id = id;
+  fseek (file, id * fs->superblock->block_size, SEEK_SET);
+  fread (datablock->content, sizeof (char), fs->superblock->block_size, file);
+  return datablock;
+}
+
 // writeBlock
 void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size) {
   fseek (file, id * block_size, SEEK_SET);
@@ -312,6 +324,7 @@ void getFreeDatablock (Filesystem fs, Datablock block) {
 
 // freeDatablock
 void freeDatablock (Filesystem fs, Datablock block, FILE* file) {
+  // falta tratar o inode que continha o bloco
   fs->superblock->number_of_blocks--;
   fs->datablock_bitmap->map[block->id] = 0;
   clearBlock (block);
@@ -319,21 +332,111 @@ void freeDatablock (Filesystem fs, Datablock block, FILE* file) {
   // free memory?
 }
 
+// isInDir
 int32_t isInDir(char* child, Inode dir, Filesystem fs){
-
     int32_t i;
 
     if(dir == NULL)
         return -3; //dir NULL
     if(dir->dir != 1)
         return -2; //dir nao eh diretorio
-
+    // nao esta tratando caso de indirecao
     for(i=0;i<dir->number_of_blocks;i++){
         if(strcmp(fs->inodes[dir->blocks[i]]->name, child) == 0)
             return fs->inodes[dir->blocks[i]]->number;
     }
     return -1; //Nao esta no diretorio
 }
+
+//
+Inode searchInodeOnDirByName (Filesystem fs, Inode dir, char* name) {
+  int32_t inodes_per_indirection_block = (fs->superblock->block_size / sizeof (int32_t)) -1;
+  int32_t i;
+  //int32_t number_of_indirection_blocks = (dir->number_of_blocks - BLOCKS_PER_INODE-1) / inodes_per_indirection_block;
+  Datablock block;
+  if (dir->dir == 0) {
+    warning ("Not a diretory");
+    return NULL;
+  }
+  for (i = 0; i < dir->number_of_blocks; i++) {
+    if (i < (BLOCKS_PER_INODE -1)) {
+      if (strcmp (fs->inodes[dir->blocks[i]]->name, name) == 0) {
+	return fs->inodes[dir->blocks[i]];
+      }
+    }
+    else {
+      if (i == (BLOCKS_PER_INODE-1)) {
+	block = readBlockByFilesystem (dir->blocks[BLOCKS_PER_INODE-1], fs);
+      }
+      else if ((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block == 0) {
+	free (block);
+	block = readBlockByFilesystem (getIntAtBlock (inodes_per_indirection_block * sizeof (int32_t), block), fs);
+      }
+      if (strcmp (fs->inodes[getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block)]->name, name) == 0)
+	return fs->inodes[getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block)];
+    }
+  }
+  return NULL;
+}
+
+//
+Inode searchInodeOnDirByValue (Filesystem fs, Inode dir, int32_t value) {
+  int32_t inodes_per_indirection_block = (fs->superblock->block_size / sizeof (int32_t)) -1;
+  int32_t i;
+  //int32_t number_of_indirection_blocks = (dir->number_of_blocks - BLOCKS_PER_INODE-1) / inodes_per_indirection_block;
+  Datablock block;
+  if (dir->dir == 0) {
+    warning ("Not a diretory");
+    return NULL;
+  }
+  for (i = 0; i < dir->number_of_blocks; i++) {
+    if (i < (BLOCKS_PER_INODE -1)) {
+      if (dir->blocks[i] == value) {
+	return fs->inodes[dir->blocks[i]];
+      }
+    }
+    else {
+      if (i == (BLOCKS_PER_INODE-1)) {
+	block = readBlockByFilesystem (dir->blocks[BLOCKS_PER_INODE-1], fs);
+      }
+      else if ((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block == 0) {
+	free (block);
+	block = readBlockByFilesystem (getIntAtBlock (inodes_per_indirection_block * sizeof (int32_t), block), fs);
+      }
+      if (getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block) == value)
+	return fs->inodes[getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block)];
+    }
+  }
+  return NULL;  
+}
+
+//
+int32_t searchBlockOnInodeByValue (Filesystem fs, Inode inode, int32_t value) {
+  int32_t inodes_per_indirection_block = (fs->superblock->block_size / sizeof (int32_t)) -1;
+  int32_t i;
+  //int32_t number_of_indirection_blocks = (inode->number_of_blocks - BLOCKS_PER_INODE-1) / inodes_per_indirection_block;
+  Datablock block;
+  for (i = 0; i < inode->number_of_blocks; i++) {
+    if (i < (BLOCKS_PER_INODE -1)) {
+      if (inode->blocks[i] == value) {
+	return inode->blocks[i];
+      }
+    }
+    else {
+      if (i == (BLOCKS_PER_INODE-1)) {
+	block = readBlockByFilesystem (inode->blocks[BLOCKS_PER_INODE-1], fs);
+      }
+      else if ((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block == 0) {
+	free (block);
+	block = readBlockByFilesystem (getIntAtBlock (inodes_per_indirection_block * sizeof (int32_t), block), fs);
+      }
+      if (getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block) == value)
+	return getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block);
+    }
+  }
+  return -1;   
+}
+
 // FUNCOES AUXILIARES
 
 // getIntAtBlock
