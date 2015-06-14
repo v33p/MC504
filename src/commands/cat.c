@@ -1,4 +1,4 @@
-/* 
+/*
    Task 2 - cat.c
    01/06/2015
    Lucas Padilha - 119785 | Pedro Tadahiro - 103797
@@ -9,6 +9,8 @@
 
 // precisamos fazer uma funcao que dado um diretorio e um nome encontra
 // o inode. caso nao esteja no diretorio, retorna alguma coisa.
+// Fiz o isInDir no filesystem.c, mas ele so olha o NAME...
+// tem que fazer olhar pro type tambem
 
 void cat (Filesystem fs, FILE* file, Inode inode) {
   int32_t i, j;

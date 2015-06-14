@@ -1,4 +1,4 @@
-/* 
+/*
    Task 2 - filesystem.c
    01/06/2015
    Lucas Padilha - 119785 | Pedro Tadahiro - 103797
@@ -8,7 +8,7 @@
 
 #include "filesystem.h"
 
-// error 
+// error
 void error (const char* message) {
   printf ("\n[ERROR]: %s\n", message);
   exit (EXIT_FAILURE);
@@ -84,7 +84,7 @@ void adjustInitialFileSystem (Filesystem fs, int32_t block_size) {
   int32_t blocks_superblock = 1;
   fs->superblock->number_of_blocks = blocks_superblock + blocks_inode_bitmap + blocks_datablock_bitmap + blocks_inodes;
   for (int32_t i = 0; i < fs->superblock->number_of_blocks; i++)
-    fs->datablock_bitmap->map[i] = 1; 
+    fs->datablock_bitmap->map[i] = 1;
 }
 
 // filesystemToFile
@@ -94,7 +94,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   if (file == NULL) error ("Null file.");
   for (i = 0; i < FILE_SIZE; i++)
     fputc (0, file);
-  
+
   // SUPERBLOCK
   Datablock block = malloc (sizeof (datablock));
   int32_t bsize = fs->superblock->block_size;
@@ -102,7 +102,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   int32_t total_blocks = FILE_SIZE / bsize;
 
   int32_t soi32 = sizeof (int32_t);
-  
+
   block->id = atual;
   setIntAtBlock (0, block, fs->superblock->magic_number);
   setIntAtBlock (soi32, block, fs->superblock->root_position);
@@ -110,11 +110,11 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   setIntAtBlock (soi32*3, block, fs->superblock->number_of_blocks);
   setIntAtBlock (soi32*4, block, fs->superblock->block_size);
   writeBlock (atual, file, block, fs->superblock->block_size);
-  
+
   // INODE BITMAP
   block->id = ++atual;
   clearBlock (block);
-  
+
   setStringAtBlock (0, block, MIN(bsize, MAX_INODES), fs->inode_bitmap->map);
   writeBlock (atual, file, block, bsize);
   if (bsize < MAX_INODES) {
@@ -128,7 +128,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   for (i = 0; i < total_blocks/bsize; i++) {
     block->id = ++atual;
     clearBlock (block);
-    
+
     setStringAtBlock (0, block, bsize, fs->datablock_bitmap->map + (i*bsize));
     writeBlock (atual, file, block, bsize);
   }
@@ -141,11 +141,11 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   }
 
   // INODES
-  int32_t inodes_per_block = bsize / INODE_SIZE; 
+  int32_t inodes_per_block = bsize / INODE_SIZE;
   int32_t total_blocks_inodes = MAX_INODES / inodes_per_block;
- 
+
   Inode inode;
-  
+
   for (i = 0; i < total_blocks_inodes; i++) {
     block->id = ++atual;
     clearBlock (block);
@@ -159,7 +159,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   }
 
   printFilesystem (fs);
-  
+
   fclose (file);
 }
 
@@ -171,17 +171,17 @@ Filesystem fileToFilesystem (char* file_name) {
   int32_t current = 0;
 
   int32_t i, j;
-  
+
   // CHECANDO FILESYSTEM
   int32_t magic_number;
-  fread (&magic_number, soi32, 1, file); 
+  fread (&magic_number, soi32, 1, file);
   if (magic_number != 119785)
-    error ("Magic Number mismatch! Cannot read this filesystem"); 
+    error ("Magic Number mismatch! Cannot read this filesystem");
 
   // pegando tamanho do bloco
   int32_t block_size;
   fseek (file, soi32 * 4, SEEK_SET);
-  fread (&block_size, soi32, 1, file); 
+  fread (&block_size, soi32, 1, file);
   Filesystem fs = createFileSystem (block_size);
 
   /* if (fs->inodes[0] != NULL) {
@@ -189,7 +189,7 @@ Filesystem fileToFilesystem (char* file_name) {
     fs->inodes[0] = NULL;
     free (root);
     }*/
-  
+
   fseek (file, 0, SEEK_SET);
 
   // SUPERBLOCK
@@ -197,7 +197,7 @@ Filesystem fileToFilesystem (char* file_name) {
   fs->superblock->root_position = getIntAtBlock (soi32, block);
   fs->superblock->number_of_inodes = getIntAtBlock (soi32*2, block);
   fs->superblock->number_of_blocks = getIntAtBlock (soi32*3, block);
-  
+
   // INODE BITMAP
   clearBlock (block);
   current++;
@@ -236,7 +236,7 @@ Filesystem fileToFilesystem (char* file_name) {
     block = readBlock (current, file, block_size);
     for (j = 0; j < inodes_per_block; j++) {
       value = getIntAtBlock((j*INODE_SIZE), block);
-      // pega os inodes cujo inode number eh diferente da posicao do inode 
+      // pega os inodes cujo inode number eh diferente da posicao do inode
       if (value == (i * inodes_per_block)+j) {
 	inode = malloc (sizeof (inode));
 	getInodeAtBlock ((j*INODE_SIZE), block, inode);
@@ -246,7 +246,7 @@ Filesystem fileToFilesystem (char* file_name) {
   }
 
   printFilesystem (fs);
-  
+
   fclose (file);
   return fs;
 }
@@ -263,7 +263,7 @@ Datablock readBlock (int32_t id, FILE* file, int32_t block_size) {
 // writeBlock
 void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size) {
   fseek (file, id * block_size, SEEK_SET);
-  fwrite (datablock->content, sizeof (char), block_size, file); 
+  fwrite (datablock->content, sizeof (char), block_size, file);
 }
 
 // getFreeInode
@@ -276,6 +276,8 @@ Inode getFreeInode (Filesystem fs) {
       if (fs->inode_bitmap->map[i] == 0) break;
     fs->inode_bitmap->map[i] = 1;
     fs->inodes[i] = inode;
+    inode->number = i;
+    inode->permition = 111;
     fs->superblock->number_of_inodes++;
     return inode;
   }
@@ -304,7 +306,7 @@ void getFreeDatablock (Filesystem fs, Datablock block) {
     fs->superblock->number_of_blocks++;
     block->id = i;
   }
-  else 
+  else
     warning ("There is no more datablocks.");
 }
 
@@ -317,6 +319,21 @@ void freeDatablock (Filesystem fs, Datablock block, FILE* file) {
   // free memory?
 }
 
+int32_t isInDir(char* child, Inode dir, Filesystem fs){
+
+    int32_t i;
+
+    if(dir == NULL)
+        return -3; //dir NULL
+    if(dir->dir != 1)
+        return -2; //dir nao eh diretorio
+
+    for(i=0;i<dir->number_of_blocks;i++){
+        if(strcmp(fs->inodes[dir->blocks[i]]->name, child) == 0)
+            return fs->inodes[dir->blocks[i]]->number;
+    }
+    return -1; //Nao esta no diretorio
+}
 // FUNCOES AUXILIARES
 
 // getIntAtBlock
@@ -429,3 +446,4 @@ void printFilesystem (Filesystem fs) {
 // TODO: Para todo codigo de create precisamos criar um codigo de free;
 // TODO: FilesystemToFile
 // TODO: FileToFilesystem
+

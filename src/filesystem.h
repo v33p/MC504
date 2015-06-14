@@ -1,4 +1,4 @@
-/* 
+/*
    Task 2 - filesystem.h
    01/06/2015
    Lucas Padilha - 119785 | Pedro Tadahiro - 103797
@@ -20,13 +20,13 @@
 #define MIN_BLOCK_SIZE 512        // 512b
 #define MAX_INODES 1024           // 1Kb
 #define MAX_BLOCKS_PER_INODE 1024 // 1Kb
-#define BLOCKS_PER_INODE 30       // 
-#define INODE_SIZE 185           //  
+#define BLOCKS_PER_INODE 30       //
+#define INODE_SIZE 185           //
 #define INODE_TYPE_SIZE 4
 #define INODE_NAME_SIZE 40
 
 /**/
-#define MIN(a,b) ((a)>(b) ? (b) : (a)) 
+#define MIN(a,b) ((a)>(b) ? (b) : (a))
 #define MAX(a,b) ((a)<(b) ? (b) : (a))
 
 /* ENUM */
@@ -43,7 +43,7 @@ typedef struct superblock {
   int32_t block_size;    // tamanho do bloco de dado
 } superblock, *Superblock;
 
-// bitmap 
+// bitmap
 typedef struct bitmap {
   char* map; // vetor de booleanos = mapa de bits
 } bitmap, *Bitmap;
@@ -53,7 +53,7 @@ typedef struct inode {
   int32_t number;                    // numero de identficacao 0 - 1023
   int32_t father;          // METADADO: apontador para o pai
   int32_t permition;                 // METADADO: valor da permissao do arquivo
-  int32_t timestamp;                 // METADADO: time stamp convertido pra int 
+  int32_t timestamp;                 // METADADO: time stamp convertido pra int
   char type[INODE_TYPE_SIZE];    // METADADO: tipo do dado
   char name[INODE_NAME_SIZE];    // METADADO: nome do arquivo
   char dir;                      // true = inode dir ou false = inode file
@@ -72,8 +72,8 @@ typedef struct filesystem {
   Superblock superblock;    // 20B
   Bitmap inode_bitmap;      // 1024B
   Bitmap datablock_bitmap;  // X B
-  Inode inodes[MAX_INODES]; // 
-  Datablock first_datablock;    // 
+  Inode inodes[MAX_INODES]; //
+  Datablock first_datablock;    //
   // (importante: esse resto nao pode ser menor do que 88% do tamanho total)
 } filesystem, *Filesystem;
 
@@ -97,7 +97,7 @@ void warning (const char* message);
 
 /*
   CreateFileSystem: Cria uma estrutura Filesystem com os valores padroes e com
-blocos de tamanho 'block_size' tomando cuidado para nao ultrapassar o 
+blocos de tamanho 'block_size' tomando cuidado para nao ultrapassar o
 overhead.
   param:
     int32_t block_size = tamanho de cada bloco
@@ -106,7 +106,7 @@ Filesystem createFileSystem (int32_t block_size);
 
 /*
   CreateSuperBlock: Cria uma estrutura Superblock com os valores padroes e com
-um total de 'number_of_blocks' de blocos de tamanho 'block_size'. 
+um total de 'number_of_blocks' de blocos de tamanho 'block_size'.
   param:
     int32_t number_of_blocks = numero total de blocos do filesystem
     int32_t block_size = tamanho dos blocos do filesystem
@@ -133,7 +133,7 @@ Bitmap createBitmap (int32_t size);
 Inode createInode (int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir);
 
 /*
-  
+
  */
 void adjustInitialFileSystem (Filesystem fs, int32_t block_size);
 
@@ -147,7 +147,7 @@ arquivo passado como parametro para funcao.
 void filesytemToFile (Filesystem fs, char* file_name);
 
 /*
-  FileToFilesystem: Dado um arquivo 'file_name' entrar dentro dele e 
+  FileToFilesystem: Dado um arquivo 'file_name' entrar dentro dele e
 construir, a partir dele, uma estrutura de filesystem para iteragir
 com bash.fs.
   param:
@@ -156,7 +156,7 @@ com bash.fs.
 Filesystem fileToFilesystem (char* file_name);
 
 /*
-  ReadBlock: Dado um id de um bloco e um file do filesystem, essa 
+  ReadBlock: Dado um id de um bloco e um file do filesystem, essa
 funcao cria um datablock e retorna.
   param:
     int32_t id = indice do bloco que quer acessar
@@ -176,13 +176,19 @@ cujo id e passado como parametro.
 void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size);
 
 /*
+ * isInDir: Verifica se o nome procurado eh filho do diretorio fornecido.
+ * Retorna o id do inode caso exista, -1 caso nao seja filho, -2 caso o
+ * inode fornecido nao seja um diretorio, -3 se Inode for null.
+ *  param:
+ *      char* child: nome do inode a verificar se eh filho;
+ *      Inode dir: diretorio onde se deseja procurar o inode;
+ *      Filesystem fs: apontador para o fs
  */
-
-
+int32_t isInDir(char* child, Inode dir, Filesystem fs);
 // FUNCOES AUXILIARES
 
 /*
-  
+
  */
 int32_t getIntAtBlock (int32_t position, Datablock block);
 /*

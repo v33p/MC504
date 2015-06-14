@@ -1,4 +1,4 @@
-/* 
+/*
    Task 2 - bash.c
    01/06/2015
    Lucas Padilha - 119785 | Pedro Tadahiro - 103797
@@ -58,7 +58,7 @@ void bash (char *file_name){
 	char command[COMMAND_SIZE];
 	char last;
 	int i = 0;
-	
+
 	printf("Entrei no Bash!\n");
 
 	while(1) {
@@ -108,61 +108,104 @@ void bash (char *file_name){
 		else {
 			warning ("Comando invalido!");
 		}
-		
+
 	}
 }
 
 void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 	FILE* arq = fopen(arq_sistema, "rb");
-	Filesystem fs = fileToFilesystem (arq_ufs);
+	Filesystem fs = fileToFilesystem (fs_name);
+	FILE* ufs = fopen(fs_name, "r+b");
 	int32_t file_size = 0;
 	int32_t file_blocks = 0;
-	int32_t bsize;
-	int32_t i = 0;
-	datablock = dblock;
-	
+	int32_t bsize, indirecao;
+	int32_t i = 0, j = 0;
+	datablock dblock;
+	Inode inode;
+
 	if (arq == NULL) error ("Native FS -> Null file.");
 	if (fs == NULL) error ("Filesystem -> Null file.");
-	
+
 	bsize = fs->superblock->block_size;
 	//TODO: Tratar nome arquivo
-	
-	fseek(arq, 0, SEEK_END);
-	file_size = ftell(arq);
-	fseek(arq, 0, SEEK_SET);
-	
+
+	while(fgetc(arq) != EOF){
+        file_size++;
+	}
+	//fseek(arq, 0, SEEK_END);
+	//file_size = ftell(arq);
+	//fseek(arq, 0, SEEK_SET);
+
 	printf("File Size: %d\n", file_size);
-	
+
 	if(fs->superblock->number_of_inodes >= 1024)
 		error ("Filesystem is full! (Unavailable Inodes)");
-	
+
 	if(file_size == 0)
 		file_blocks = 0;
 	else
 		file_blocks = (file_size + bsize-1) / bsize;
-	
-	//if(fs->superblock->number_of_blocks + file_blocks > freeblocks())
-	//	error ("Filesystem is full! (Not enough Datablocks)");
-	
-	clearBlock(&dblock);
-	
-	//findFreeInode();
-	
-	/*for (j=0;j<file_blocks;j++){
+
+	if(fs->superblock->number_of_blocks + file_blocks > FILE_SIZE/bsize)
+		error ("Filesystem is full! (Not enough Datablocks)");
+
+	inode = getFreeInode(fs);
+    for(indirecao=1;i<BLOCKS_PER_INODE;indirecao++)
+            if(indirecao*bsize/4 >= MAX_BLOCKS_PER_INODE) break;
+
+	for (j=0;j<file_blocks;j++){
+        clearBlock(&dblock);
 		for(i=0;i<bsize;i++) {
 			dblock.content[i] = fgetc(arq);
-			if(dblock.content[i] == EOF)
+			if(dblock.content[i] == 'EOF')
 				break;
 		}
-		writeBlock (findFreeDatablock(), fs, dblock, bsize);
-	}*/
-	
-	
-	
-	
+		getFreeDatablock(fs, &dblock);
+		inode->number_of_blocks++;
+        if(j < BLOCKS_PER_INODE-1 -indirecao){
+            inode->blocks[j] = dblock.id;
+            writeBlock (dblock.id, ufs, &dblock, bsize);
+        }
+        //Fazer tratamento de indirecao
+    }
+
+
+
+
 	fclose(arq);
-	//fclose(fs);
+	fclose(ufs);
 }
 void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
 
+}
+
+int32_t getInodefromPathname (char *pathname, Filesystem fs){
+
+    char* tok = strtok(pathname, "/");
+    Inode dir = fs->inodes[0];
+    char* child;
+    char valid = 1;
+    int32_t x;
+
+    while (tok != NULL) {
+        child = tok;
+        x = isInDir(child, dir, fs);
+        if(x >= 0 && valid) {
+            dir = fs->inodes[x];
+        }
+        else if (valid) {
+            dir = NULL;
+            valid = 0;
+        }
+        else {
+            warning("Invalid pathname!");
+            return -2;
+        }
+        tok = strtok(NULL,"/");
+    }
+
+    if(valid)
+        return dir;
+
+    return -1;
 }
