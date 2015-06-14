@@ -216,6 +216,7 @@ Filesystem fileToFilesystem (char* file_name) {
   fseek (file, soi32 * 4, SEEK_SET);
   fread (&block_size, soi32, 1, file); 
   Filesystem fs = createFileSystem (block_size);
+  //free (fs->inodes[0]);
   fseek (file, 0, SEEK_SET);
 
   // SUPERBLOCK
@@ -263,7 +264,7 @@ Filesystem fileToFilesystem (char* file_name) {
     for (j = 0; j < inodes_per_block; j++) {
       value = getIntAtBlock((j*INODE_SIZE), block);
       // pega os inodes cujo inode number eh diferente da posicao do inode 
-      if (value != (i * inodes_per_block)+j) {
+      if (value == (i * inodes_per_block)+j) {
 	inode = malloc (sizeof (inode));
 	getInodeAtBlock ((j*INODE_SIZE), block, inode);
 	fs->inodes[(i * inodes_per_block) + j] = inode;
@@ -271,7 +272,7 @@ Filesystem fileToFilesystem (char* file_name) {
     }
   }
 
-  //printFilesystem (fs);
+  printFilesystem (fs);
   
   fclose (file);
   return fs;
@@ -344,7 +345,7 @@ void getInodeAtBlock (int32_t position, Datablock block, Inode inode) {
   inode->number = getIntAtBlock (position, block);
   inode->father = getIntAtBlock (position+soi32, block);
   inode->permition = getIntAtBlock (position+(2*soi32), block);
-  inode->timestamp = getIntAtBlock (position+(3*soi32), block);
+  inode->timestamp = (int32_t) getIntAtBlock (position+(3*soi32), block);
   getStringAtBlock (position+(4*soi32), block, INODE_TYPE_SIZE, inode->type);
   getStringAtBlock (position+(4*soi32)+INODE_TYPE_SIZE, block, INODE_NAME_SIZE, inode->name);
   getStringAtBlock (position+(4*soi32)+INODE_TYPE_SIZE+INODE_NAME_SIZE, block, 1, &inode->dir);
@@ -368,8 +369,10 @@ void printSuperblock (Superblock sb) {
 // printBitmap
 void printBitmap (Bitmap bm, int32_t size) {
   printf ("Bitmap:\n");
-  for (int32_t i = 0; i < size; i++)
-    printf ("%c ", bm->map[i]);
+  for (int32_t i = 0; i < size; i++) {
+    if (bm->map[i] == 0) printf ("0 ");
+    else printf ("1 ");
+  }
   printf ("\n");
 }
 
@@ -379,8 +382,10 @@ void printInode (Inode inode) {
   printf ("father: %d\n", inode->father);
   printf ("permitions: %d\n", inode->permition);
   printf ("timestamp: %d\n", inode->timestamp);
-  printf ("Name: %s.%s\n", inode->name[i], inode->type[i]);
-  printf ("\ndir: %c\n", inode->dir);
+  printf ("Name: %s.%s\n", inode->name, inode->type);
+  if (inode->dir == 0) printf ("dir: nao\n");
+  else printf ("dir: sim\n");
+  //printf ("dir: %c\n", inode->dir);
   printf ("number of blocks: %d\n", inode->number_of_blocks);
 }
 
