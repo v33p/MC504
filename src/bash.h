@@ -58,3 +58,21 @@ void parseInput (int argc, char** argv);
 */
 
 void bash (char *file_name);
+
+/*
+ * ufsInput: Copia arquivo do fs nativo para o ufs
+ *  param:
+ * 		char* arq_sistema = pathname do arquivo a ser copiado
+ * 		char* arq_ufs = pathname dentro do ufs onde arquivo sera copiado
+ * 		char* fs_name = filesystem a ser utilizado
+*/
+void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name);
+
+/*
+ * ufsOutput: Copia arquivo do ufs para o fs nativo
+ *  param:
+ * 		char* arq_ufs = pathname dentro do ufs do arquivo a ser copiado
+ * 		char* arq_sistema = pathname do arquivo onde o arquivo sera copiado
+ * 		char* fs_name = filesystem a ser utilizado
+*/
+void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name);

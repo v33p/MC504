@@ -19,17 +19,19 @@ void parseInput (int argc, char** argv) {
   if (argc < 3) error ("Missing parameters.");
   if (argc > 5) error ("Wrong number of parameters.");
 
-  if (strcmp (argv[2], "-b")) {
+  if (strcmp (argv[1], "-b") == 0) {
     //-b <arquivo_fs>: inicia o bash mode
 	bash(argv[2]);
   }
-  else if (strcmp (argv[1], "-i")) {
+  else if (strcmp (argv[1], "-i") == 0) {
     //-i <pathname_do_arq_origem_fs_sistema> <pathname_do_arq_destino_dentro_do_ufs> <arquivo_fs>: transfere/inclui um *novo* aquivo dentro do UFS. Sua permissão será total: leitura, escrita e execução. Se pathname não existir no UFS, ou o arquivo já existir, um erro deve ser dado.
+    ufsInput(argv[2], argv[3], argv[4]);
   }
-  else if (strcmp (argv[1], "-o")) {
+  else if (strcmp (argv[1], "-o") == 0) {
     //-o <pathname_do_arq_origem_ufs> <pathname_do_arq_destino_fs_sistema> <arquivo_fs>: transfere/copia um aquivo de dentro do UFS para o fs exterior. Não há necessidade de conversão de permissões. Se pathname não existir no UFS, um erro deve ser dado.
+    ufsOutput(argv[2], argv[3], argv[4]);
   }
-  else if (strcmp (argv[1], "-d")) {
+  else if (strcmp (argv[1], "-d") == 0) {
     //-d <arquivo_fs>: imprime ("Used Inodes: %i \n Used Directories: %i \n Used Data Blocks: %i\n)
 	//Filesystem fs = fileToFilesystem (argv[2]);
 	//printf("Used Inodes: %i \n Used Directories: %i \n Used Data Blocks: %i\n", fs->superblock->number_of_inodes, fs->superblock->number_of_dir, fs->superblock->number_of_blocks);
@@ -104,8 +106,63 @@ void bash (char *file_name){
 			return;
 		}
 		else {
-			error ("Comando invalido!");
+			warning ("Comando invalido!");
 		}
 		
 	}
+}
+
+void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
+	FILE* arq = fopen(arq_sistema, "rb");
+	Filesystem fs = fileToFilesystem (arq_ufs);
+	int32_t file_size = 0;
+	int32_t file_blocks = 0;
+	int32_t bsize;
+	int32_t i = 0;
+	datablock = dblock;
+	
+	if (arq == NULL) error ("Native FS -> Null file.");
+	if (fs == NULL) error ("Filesystem -> Null file.");
+	
+	bsize = fs->superblock->block_size;
+	//TODO: Tratar nome arquivo
+	
+	fseek(arq, 0, SEEK_END);
+	file_size = ftell(arq);
+	fseek(arq, 0, SEEK_SET);
+	
+	printf("File Size: %d\n", file_size);
+	
+	if(fs->superblock->number_of_inodes >= 1024)
+		error ("Filesystem is full! (Unavailable Inodes)");
+	
+	if(file_size == 0)
+		file_blocks = 0;
+	else
+		file_blocks = (file_size + bsize-1) / bsize;
+	
+	//if(fs->superblock->number_of_blocks + file_blocks > freeblocks())
+	//	error ("Filesystem is full! (Not enough Datablocks)");
+	
+	clearBlock(&dblock);
+	
+	//findFreeInode();
+	
+	/*for (j=0;j<file_blocks;j++){
+		for(i=0;i<bsize;i++) {
+			dblock.content[i] = fgetc(arq);
+			if(dblock.content[i] == EOF)
+				break;
+		}
+		writeBlock (findFreeDatablock(), fs, dblock, bsize);
+	}*/
+	
+	
+	
+	
+	fclose(arq);
+	//fclose(fs);
+}
+void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
+
 }
