@@ -6,3 +6,7 @@
 */
 
 #include "rm.h"
+
+void rm (Filesystem fs, Inode inode) {
+  freeInode (fs, inode);
+}

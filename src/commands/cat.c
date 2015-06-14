@@ -12,7 +12,7 @@
 // Fiz o isInDir no filesystem.c, mas ele so olha o NAME...
 // tem que fazer olhar pro type tambem
 
-void cat (Filesystem fs, FILE* file, Inode inode) {
+void cat (Filesystem fs, Inode inode) {
   int32_t i, j;
   if (inode->permition < 100) {
     warning ("Permition Denied.");
@@ -22,27 +22,16 @@ void cat (Filesystem fs, FILE* file, Inode inode) {
     warning ("You cannot use this command in a diretory");
     return;
   }
-  Datablock block = malloc (sizeof (datablock));
-  if (inode->number_of_blocks > BLOCKS_PER_INODE) {
-    for (i = 0; i < BLOCKS_PER_INODE -1; i++) {
-      clearBlock (block);
-      block = readBlock (inode->blocks[i], file, fs->superblock->block_size);
-      for (j = 0; j < fs->superblock->block_size; j++) {
-	if (block->content[j] == 'EOF') break;
-	printf ("%c", block->content[j]);
-      }
-    }
-  }
-  else {
-    for (i = 0; i < BLOCKS_PER_INODE; i++) {
-      if (inode->blocks[i] == -1) break;
-      clearBlock (block);
-      block = readBlock (inode->blocks[i], file, fs->superblock->block_size);
-      for (j = 0; j < fs->superblock->block_size; j++) {
-	if (block->content[j] == 'EOF') break;
-	printf ("%c", block->content[j]);
-      }
+  Datablock block;
+  int32_t* array = getBlocksFromInode (fs, inode);
+  for (i = 0; i < inode->number_of_blocks; i++) {
+    block = readBlockByFilesystem (array[i], fs, inode);
+    for (j = 0; j < fs->superblock->block_size; j++) {
+      if (block->content[j] == 'EOF') break;
+      printf ("%c", block->content[j]);
     }
     printf ("\n");
+    free (block);
   }
+  free (array);
 }

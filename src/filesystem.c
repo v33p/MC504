@@ -16,7 +16,7 @@ void error (const char* message) {
 
 // warning
 void warning (const char* message) {
-  printf ("\n[WARNING] %s\n", message);
+  printf ("\n[WARNING]: %s\n", message);
 }
 
 // createFileSystem
@@ -32,7 +32,7 @@ Filesystem createFileSystem (int32_t block_size, char* file_name) {
   adjustInitialFileSystem (fs, block_size);
   for (int32_t i = 1; i < MAX_INODES; i++)
     fs->inodes[i] = NULL;
-  fs->inodes[0] = createInode (0, -1, 111, "", "", 1);
+  fs->inodes[0] = createInode (fs, 0, -1, 111, "", "", 1);
   fs->first_datablock = NULL;
   return fs;
 }
@@ -57,24 +57,40 @@ Bitmap createBitmap (int32_t size) {
   return bitmap;
 }
 
+Inode createEmptyInode (Filesystem fs, int32_t number) {
+  if (fs->superblock->number_of_blocks < MAX_INODES) {
+    Inode inode = malloc (sizeof (inode));
+    int32_t i;
+    inode->number = number;
+    inode->timestamp = (int32_t) time(NULL);
+    for (i = 0; i < INODE_NAME_SIZE; i++)
+      inode->name[i] = '\0';
+    for (i = 0; i < INODE_TYPE_SIZE; i++)
+      inode->type[i] = '\0';
+    inode->number_of_blocks = 0;
+    for (i = 0; i < BLOCKS_PER_INODE; i++)
+      inode->blocks[i] = -1;
+    fs->inode_bitmap->map[number] = 1;
+    fs->inodes[number] = inode;
+    fs->superblock->number_of_inodes++;
+    return inode;
+  }
+  else {
+    warning ("There is no more inodes.");
+    return NULL;
+  }
+}
+
 // createInode
-Inode createInode (int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir) {
-  Inode inode = malloc (sizeof (inode));
-  int32_t i;
-  inode->number = number;
-  inode->father = father;
-  inode->permition = permition;
-  inode->timestamp = (int32_t) time(NULL);
-  for (i = 0; i < INODE_NAME_SIZE; i++)
-    inode->name[i] = '\0';
-  for (i = 0; i < INODE_TYPE_SIZE; i++)
-    inode->type[i] = '\0';
-  strcpy (inode->type, type);
-  strcpy (inode->name, name);
-  inode->dir = dir;
-  inode->number_of_blocks = 0;
-  for (i = 0; i < BLOCKS_PER_INODE; i++)
-    inode->blocks[i] = -1;
+Inode createInode (Filesystem fs, int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir) {
+  Inode inode = createEmptyInode (fs, number);
+  if (inode != NULL) {
+    inode->father = father;
+    inode->permition = permition;
+    strcpy (inode->type, type);
+    strcpy (inode->name, name);
+    inode->dir = dir;
+  }
   return inode;
 }
 
@@ -272,6 +288,7 @@ Datablock readBlockByFilesystem (int32_t id, Filesystem fs) {
   datablock->id = id;
   fseek (file, id * fs->superblock->block_size, SEEK_SET);
   fread (datablock->content, sizeof (char), fs->superblock->block_size, file);
+  fclose (file);
   return datablock;
 }
 
@@ -281,33 +298,45 @@ void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size
   fwrite (datablock->content, sizeof (char), block_size, file);
 }
 
+// other writeBlock
+void writeBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock) {
+  FILE* file = fopen (fs->file_name, "w+");
+  fseek (file, id * fs->superblock->block_size, SEEK_SET);
+  fwrite (datablock->content, sizeof (char), fs->superblock->block_size, file);
+  fclose (file);
+}
+
 // getFreeInode
 Inode getFreeInode (Filesystem fs) {
   int32_t i;
-  if (fs->superblock->number_of_inodes < MAX_INODES) {
-    Inode inode = malloc (sizeof (inode));
-    inode->timestamp = (int32_t) time (NULL);
-    for (i = 0; i < MAX_INODES; i++)
-      if (fs->inode_bitmap->map[i] == 0) break;
-    fs->inode_bitmap->map[i] = 1;
-    fs->inodes[i] = inode;
-    inode->number = i;
-    inode->permition = 111;
-    fs->superblock->number_of_inodes++;
-    return inode;
-  }
-  else {
-    warning ("There is no more inodes.");
-    return NULL;
-  }
+  for (i = 0; i < MAX_INODES; i++)
+    if (fs->inode_bitmap->map[i] == 0) break;
+  Inode inode = createEmptyInode (fs, i);
+  if (inode != NULL) inode->permition = 110;
+  return inode;
 }
 
 // freeInode
 void freeInode (Filesystem fs, Inode inode) {
+  int32_t i;
   fs->superblock->number_of_inodes--;
   fs->inode_bitmap->map[inode->number] = 0;
+  fs->inodes[inode->number] = NULL;
+  int32_t* array = getBlocksFromInode (fs, inode);
+  if (inode->dir == 0) {
+    for (i = 0; i < inode->number_of_blocks; i++) {
+      Datablock block = readBlockByFilesystem (array[i], fs); 
+      freeDatablock (fs, block);
+    }
+  }
+  else {
+    for (i = 0; i < inode->number_of_blocks; i++) {
+      freeInode (fs, fs->inodes[i]);
+    }
+  }
   // free memory
-  // free (&fs->inodes[inode->number]);
+  free (inode);
+  free (array);
 }
 
 // getFreeDatablock
@@ -326,13 +355,14 @@ void getFreeDatablock (Filesystem fs, Datablock block) {
 }
 
 // freeDatablock
-void freeDatablock (Filesystem fs, Datablock block, FILE* file) {
+void freeDatablock (Filesystem fs, Datablock block) {
   // falta tratar o inode que continha o bloco
   fs->superblock->number_of_blocks--;
   fs->datablock_bitmap->map[block->id] = 0;
   clearBlock (block);
-  writeBlock (block->id, file, block, fs->superblock->block_size);
+  writeBlockByFilesystem (block->id, fs, block);
   // free memory?
+  free (block);
 }
 
 // isInDir
@@ -438,6 +468,30 @@ int32_t searchBlockOnInodeByValue (Filesystem fs, Inode inode, int32_t value) {
     }
   }
   return -1;   
+}
+
+//
+int32_t* getBlocksFromInode (Filesystem fs, Inode inode) {
+  int32_t* array = malloc (sizeof (int32_t) * inode->number_of_blocks);
+  int32_t inodes_per_indirection_block = (fs->superblock->block_size / sizeof (int32_t)) - 1;
+  int32_t i;
+  Datablock block;
+  for (i = 0; i < inode->number_of_blocks; i++) {
+    if (i < (BLOCKS_PER_INODE -1)) {
+      array[i] = inode->blocks[i];
+    }
+    else {
+      if (i == (BLOCKS_PER_INODE-1)) {
+	block = readBlockByFilesystem (inode->blocks[BLOCKS_PER_INODE-1], fs);
+      }
+      else if ((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block == 0) {
+	free (block);
+	block = readBlockByFilesystem (getIntAtBlock (inodes_per_indirection_block * sizeof (int32_t), block), fs);
+      }
+      array[i] = getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block);
+    }
+  }
+  return array;
 }
 
 // FUNCOES AUXILIARES

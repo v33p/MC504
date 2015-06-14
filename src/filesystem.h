@@ -123,6 +123,10 @@ Superblock createSuperBlock (int32_t block_size);
 Bitmap createBitmap (int32_t size);
 
 /*
+ */
+Inode createEmptyInode (Filesystem fs, int32_t number);
+
+/*
   CreateInode: Cria um inode com alguns parametros.
   param:
     int32_t number = identificador unico do inode no filesystem
@@ -132,7 +136,7 @@ Bitmap createBitmap (int32_t size);
     char* name = nome do inode para consumo humano
     char dir = variavel booleana para indicar se e diretorio ou nao
  */
-Inode createInode (int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir);
+Inode createInode (Filesystem fs, int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir);
 
 /*
 
@@ -182,6 +186,26 @@ cujo id e passado como parametro.
 void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size);
 
 /*
+ */
+void WriteBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock);
+
+/*
+ */
+Inode getFreeInode (Filesystem fs);
+
+/*
+ */
+void freeInode (Filesystem fs, Inode inode);
+
+/*
+ */
+void getFreeDatablock (Filesystem fs, Datablock block);
+
+/*
+ */
+void freeDatablock (Filesystem fs, Datablock block);
+
+/*
  * isInDir: Verifica se o nome procurado eh filho do diretorio fornecido.
  * Retorna o id do inode caso exista, -1 caso nao seja filho, -2 caso o
  * inode fornecido nao seja um diretorio, -3 se Inode for null.
@@ -203,6 +227,10 @@ Inode searchInodeOnDirByValue (Filesystem fs, Inode dir, int32_t value);
 /*
  */
 int32_t searchBlockOnInodeByValue (Filesystem fs, Inode inode, int32_t value);
+
+/*
+ */
+int32_t* getBlocksFromInode (Filesystem fs, Inode inode);
 
 // FUNCOES AUXILIARES
 

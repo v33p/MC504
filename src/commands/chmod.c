@@ -6,3 +6,7 @@
 */
 
 #include "chmod.h"
+
+void chmod (Inode inode, char* param) {
+  inode->permition = atoi (param);
+}
