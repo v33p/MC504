@@ -24,7 +24,10 @@ void parseInput (int argc, char** argv) {
     block_size = parseSize (argv[2]);
     Filesystem fs = createFileSystem (block_size);
     filesystemToFile (fs, argv[3]);
-    fileToFilesystem (argv[3]);
+  }
+  // TESTE APENAS DEPOIS PRECISAMOS COMENTAR
+  else if (strcmp ("-t", argv[1]) == 0) {
+    fileToFilesystem (argv[2]);
   }
   else if (argc == 2) {
     // Criar arquivo com valor default.

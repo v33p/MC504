@@ -32,7 +32,6 @@ Filesystem createFileSystem (int32_t block_size) {
     fs->inodes[i] = NULL;
   fs->inodes[0] = createInode (0, -1, 111, "", "", 1);
   fs->first_datablock = NULL;
-  //printf ("fs\n");
   return fs;
 }
 
@@ -44,7 +43,6 @@ Superblock createSuperBlock (int32_t block_size) {
   superblock->number_of_inodes = 1;
   superblock->number_of_blocks = 0; // precisa calcular
   superblock->block_size = block_size;
-  //printf ("sb\n");
   return superblock;
 }
 
@@ -53,7 +51,6 @@ Bitmap createBitmap (int32_t size) {
   char* map = malloc (size * sizeof (char));
   Bitmap bitmap = malloc (sizeof (bitmap));
   bitmap->map = map;
-  //printf ("bm\n");
   return bitmap;
 }
 
@@ -75,7 +72,6 @@ Inode createInode (int32_t number, int32_t father, int32_t permition, char* type
   inode->number_of_blocks = 0;
   for (i = 0; i < BLOCKS_PER_INODE; i++)
     inode->blocks[i] = -1;
-  //printf ("i\n");
   return inode;
 }
 
@@ -114,8 +110,6 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   setIntAtBlock (soi32*3, block, fs->superblock->number_of_blocks);
   setIntAtBlock (soi32*4, block, fs->superblock->block_size);
   writeBlock (atual, file, block, fs->superblock->block_size);
-
-  //printf ("superblock\n");
   
   // INODE BITMAP
   block->id = ++atual;
@@ -129,8 +123,6 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     setStringAtBlock (0, block, bsize, fs->inode_bitmap->map + bsize);
     writeBlock (atual, file, block, bsize);
   }
-
-  //printf ("inode bitmap\n");
 
   // DATABLOCK BITMAP
   for (i = 0; i < total_blocks/bsize; i++) {
@@ -148,32 +140,10 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     writeBlock (atual, file, block, bsize);
   }
 
-  //printf ("datablock bitmap\n");
-
   // INODES
   int32_t inodes_per_block = bsize / INODE_SIZE; 
   int32_t total_blocks_inodes = MAX_INODES / inodes_per_block;
-  /*
-  Inode root = fs->inodes[fs->superblock->root_position];
-
-  block->id = ++atual;
-  clearBlock (block);
-
-  setInodeAtBlock (0, block, root);
-  // escrevendo root
-  writeBlock (atual, file, block, bsize);
-  
-  // zerando conteudo
-  for (i = 0; i < bsize; i++)
-    block->content[i] = 0;
-  // escrevendo outros inodes
-  for (i = 1; i < total_blocks_inodes; i++) {
-    block->id = ++atual;
-    clearBlock (block);
-    
-    writeBlock (atual, file, block, bsize);
-  }
-  */
+ 
   Inode inode;
   
   for (i = 0; i < total_blocks_inodes; i++) {
@@ -187,8 +157,6 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     }
     writeBlock (atual, file, block, bsize);
   }
-
-  //printf ("inodes\n");
 
   printFilesystem (fs);
   
@@ -212,11 +180,16 @@ Filesystem fileToFilesystem (char* file_name) {
 
   // pegando tamanho do bloco
   int32_t block_size;
-  //void* pointer = &block_size; 
   fseek (file, soi32 * 4, SEEK_SET);
   fread (&block_size, soi32, 1, file); 
   Filesystem fs = createFileSystem (block_size);
-  //free (fs->inodes[0]);
+
+  /* if (fs->inodes[0] != NULL) {
+    Inode root = fs->inodes[0];
+    fs->inodes[0] = NULL;
+    free (root);
+    }*/
+  
   fseek (file, 0, SEEK_SET);
 
   // SUPERBLOCK
@@ -278,7 +251,6 @@ Filesystem fileToFilesystem (char* file_name) {
   return fs;
 }
 
-
 // readBlock
 Datablock readBlock (int32_t id, FILE* file, int32_t block_size) {
   Datablock datablock = malloc (sizeof (datablock));
@@ -292,6 +264,57 @@ Datablock readBlock (int32_t id, FILE* file, int32_t block_size) {
 void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size) {
   fseek (file, id * block_size, SEEK_SET);
   fwrite (datablock->content, sizeof (char), block_size, file); 
+}
+
+// getFreeInode
+Inode getFreeInode (Filesystem fs) {
+  int32_t i;
+  if (fs->superblock->number_of_inodes < MAX_INODES) {
+    Inode inode = malloc (sizeof (inode));
+    inode->timestamp = (int32_t) time (NULL);
+    for (i = 0; i < MAX_INODES; i++)
+      if (fs->inode_bitmap->map[i] == 0) break;
+    fs->inode_bitmap->map[i] = 1;
+    fs->inodes[i] = inode;
+    fs->superblock->number_of_inodes++;
+    return inode;
+  }
+  else {
+    warning ("There is no more inodes.");
+    return NULL;
+  }
+}
+
+// freeInode
+void freeInode (Filesystem fs, Inode inode) {
+  fs->superblock->number_of_inodes--;
+  fs->inode_bitmap->map[inode->number] = 0;
+  // free memory
+  // free (&fs->inodes[inode->number]);
+}
+
+// getFreeDatablock
+void getFreeDatablock (Filesystem fs, Datablock block) {
+  int32_t i;
+  int32_t total_of_blocks = FILE_SIZE / fs->superblock->block_size;
+  if (fs->superblock->number_of_blocks < total_of_blocks -1) {
+    for (i = 0; i < total_of_blocks; i++)
+      if (fs->datablock_bitmap->map[i] == 0) break;
+    fs->datablock_bitmap->map[i] = 1;
+    fs->superblock->number_of_blocks++;
+    block->id = i;
+  }
+  else 
+    warning ("There is no more datablocks.");
+}
+
+// freeDatablock
+void freeDatablock (Filesystem fs, Datablock block, FILE* file) {
+  fs->superblock->number_of_blocks--;
+  fs->datablock_bitmap->map[block->id] = 0;
+  clearBlock (block);
+  writeBlock (block->id, file, block, fs->superblock->block_size);
+  // free memory?
 }
 
 // FUNCOES AUXILIARES

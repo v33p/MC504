@@ -165,7 +165,7 @@ funcao cria um datablock e retorna.
 Datablock readBlock (int32_t id, FILE* file, int32_t block_size);
 
 /*
-  WriteBlcok: Dado um id de um bloco, um file do filesystem e um
+  WriteBlock: Dado um id de um bloco, um file do filesystem e um
 datablock, essa funcao sublistitui o valor do datablock no bloco
 cujo id e passado como parametro.
   param:
@@ -174,6 +174,9 @@ cujo id e passado como parametro.
     Datablock datablock = bloco que substituira o bloco antigo.
  */
 void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size);
+
+/*
+ */
 
 
 // FUNCOES AUXILIARES
