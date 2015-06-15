@@ -189,6 +189,8 @@ void filesystemToFile (Filesystem fs, char* file_name) {
 Filesystem fileToFilesystem (char* file_name) {
   FILE* file = fopen (file_name, "r");
 
+    if (file == NULL) error("Could not open filesystem (invalid pathname)!");
+
   int32_t soi32 = sizeof (int32_t);
   int32_t current = 0;
 
@@ -283,6 +285,13 @@ Datablock readBlock (int32_t id, FILE* file, int32_t block_size) {
   return datablock;
 }
 
+// readBlock2
+void readBlocktoBlock (Datablock datablock, int32_t block_size, FILE* file) {
+  fseek (file, datablock->id * block_size, SEEK_SET);
+  fread (datablock->content, sizeof (char), block_size, file);
+  fseek (file, 0, SEEK_SET);
+}
+
 // other readBlock
 Datablock readBlockByFilesystem (int32_t id, Filesystem fs) {
   Datablock datablock = malloc (sizeof (datablock));
@@ -302,7 +311,7 @@ void writeBlock (int32_t id, FILE* file, Datablock datablock, int32_t block_size
 
 // other writeBlock
 void writeBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock) {
-  FILE* file = fopen (fs->file_name, "w+");
+  FILE* file = fopen (fs->file_name, "r+");
   fseek (file, id * fs->superblock->block_size, SEEK_SET);
   fwrite (datablock->content, sizeof (char), fs->superblock->block_size, file);
   fclose (file);
@@ -312,7 +321,8 @@ void writeBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock) {
 Inode getFreeInode (Filesystem fs) {
   int32_t i;
   for (i = 0; i < MAX_INODES; i++)
-    if (fs->inode_bitmap->map[i] == 0) break;
+    if (fs->inode_bitmap->map[i] == 0)
+            break;
   Inode inode = createEmptyInode (fs, i);
   if (inode != NULL) inode->permition = 110;
   return inode;
@@ -327,7 +337,7 @@ void freeInode (Filesystem fs, Inode inode) {
   int32_t* array = getBlocksFromInode (fs, inode);
   if (inode->dir == 0) {
     for (i = 0; i < inode->number_of_blocks; i++) {
-      Datablock block = readBlockByFilesystem (array[i], fs); 
+      Datablock block = readBlockByFilesystem (array[i], fs);
       freeDatablock (fs, block);
     }
   }
@@ -389,6 +399,10 @@ Inode searchInodeOnDirByName (Filesystem fs, Inode dir, char* name) {
   int32_t i;
   //int32_t number_of_indirection_blocks = (dir->number_of_blocks - BLOCKS_PER_INODE-1) / inodes_per_indirection_block;
   Datablock block;
+  if(dir == NULL) {
+    warning("Null pointer as Inode");
+    return NULL;
+  }
   if (dir->dir == 0) {
     warning ("Not a diretory");
     return NULL;
@@ -442,7 +456,7 @@ Inode searchInodeOnDirByValue (Filesystem fs, Inode dir, int32_t value) {
 	return fs->inodes[getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block)];
     }
   }
-  return NULL;  
+  return NULL;
 }
 
 //
@@ -469,7 +483,7 @@ int32_t searchBlockOnInodeByValue (Filesystem fs, Inode inode, int32_t value) {
 	return getIntAtBlock (((i - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block);
     }
   }
-  return -1;   
+  return -1;
 }
 
 //
@@ -554,7 +568,7 @@ void getInodeAtBlock (int32_t position, Datablock block, Inode inode) {
   memcpy ((void *) inode->blocks, block->content+position+(soi32*5)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, BLOCKS_PER_INODE * soi32);
 }
 
-// retorna a permissao exclusiva de alguma 
+// retorna a permissao exclusiva de alguma
 Bool valuePermition (int32_t permition, int32_t exclusivePermition) {
   permition = permition / exclusivePermition;
   if (permition % 2 == 0) return false;

@@ -59,7 +59,7 @@ void bash (char *file_name){
 	//char last;
 	int i = 0;
 
-	printf("Entrei no Bash!\n");
+	printf("Entrei no Bash! %s\n", file_name);
 
 	while(1) {
 		//fgets(command_line, sizeof(command_line), stdin);
@@ -113,25 +113,36 @@ void bash (char *file_name){
 }
 
 void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
-	FILE* arq = fopen(arq_sistema, "rb");
+	FILE* arq = fopen(arq_sistema, "r");
 	Filesystem fs = fileToFilesystem (fs_name);
-	FILE* ufs = fopen(fs_name, "r+b");
-	int32_t file_size = 0;
-	int32_t file_blocks = 0;
-	int32_t bsize, indirecao;
-	int32_t i = 0, j = 0;
+	FILE* ufs = fopen(fs_name, "r+");
+	int32_t file_size = 0; //tamanho do file
+	int32_t file_blocks = 0; //# blocos usado pelo file
+	int32_t bsize; //block size
+	int32_t i = 0, j = 0; //contadores
+	int32_t c = 0;
 	datablock dblock;
 	Inode inode;
 
 	if (arq == NULL) error ("Native FS -> Null file.");
 	if (fs == NULL) error ("Filesystem -> Null file.");
 
+    c = getFatherfromPathname(arq_ufs, fs, fs->inodes[0]);
+    if(c<0) error("Invalid pathname!");
+    if(fs->inodes[c]->number_of_blocks >= MAX_BLOCKS_PER_INODE)
+        error("Diretory is full!");
+
 	bsize = fs->superblock->block_size;
 	//TODO: Tratar nome arquivo
 
-	while(fgetc(arq) != EOF){
-        file_size++;
-	}
+    do{
+        fgetc(arq);
+        if( feof(arq) )
+            break;
+        else
+            file_size++;
+    }while(true);
+
 	//fseek(arq, 0, SEEK_END);
 	//file_size = ftell(arq);
 	//fseek(arq, 0, SEEK_SET);
@@ -149,49 +160,112 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 	if(fs->superblock->number_of_blocks + file_blocks > FILE_SIZE/bsize)
 		error ("Filesystem is full! (Not enough Datablocks)");
 
+	fs->inodes[c]->number_of_blocks++;
 	inode = getFreeInode(fs);
-    for(indirecao=1;i<BLOCKS_PER_INODE;indirecao++)
-            if(indirecao*bsize/4 >= MAX_BLOCKS_PER_INODE) break;
+    //insertBlockInInode(fs->inodes[c], inode->number, bsize);
+    //salvar fs->inodes[c]
 
 	for (j=0;j<file_blocks;j++){
         clearBlock(&dblock);
-		for(i=0;i<bsize;i++) {
-			dblock.content[i] = fgetc(arq);
-			if(dblock.content[i] == EOF)
-				break;
+        dblock.id=j;
+        if (j != file_blocks-1)
+            readBlocktoBlock(&dblock, bsize, arq);
+		else{
+            for(i=0;i<bsize;i++) {
+                c = fgetc(arq);
+                if(feof(arq) == EOF)
+                    break;
+                dblock.content[i] = (char) c;
+            }
 		}
 		getFreeDatablock(fs, &dblock);
 		inode->number_of_blocks++;
-        if(j < BLOCKS_PER_INODE-1 -indirecao){
+        if(j < BLOCKS_PER_INODE-1){
             inode->blocks[j] = dblock.id;
             writeBlock (dblock.id, ufs, &dblock, bsize);
         }
         //Fazer tratamento de indirecao
     }
+    //salvar o inode de alguma forma
 
 
-
-
+    free(inode);
+    free(fs);
 	fclose(arq);
 	fclose(ufs);
 }
 void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
+    FILE* arq = fopen(arq_sistema, "w");
+    Filesystem fs = fileToFilesystem(fs_name);
+    int32_t x = 0;
+    Inode inode;
+    int32_t i = 0;
 
+    if (arq == NULL) error("Native FS -> Null file");
+
+    x = getInodeNumberfromPathname(arq_ufs, fs, fs->inodes[0]);
+    if (x<0)
+        error("Pathname Invalida!");
+    inode = fs->inodes[x];
+    if(inode->dir)
+        error("Pathname de diretorio!");
+    if(inode->permition < 100)
+        error("Sem permissao de leitura!");
+
+    for(i=0;i<inode->number_of_blocks;i++){
+        memcpy(arq,(void*)inode->blocks[i], fs->superblock->block_size);
+        //tratar indirecao
+    }
+
+    fclose(arq);
+    free(fs);
 }
 
-int32_t getInodefromPathname (char *pathname, Filesystem fs){
+int32_t getFatherfromPathname (char* pathname, Filesystem fs, Inode current_dir) {
 
-    char* tok = strtok(pathname, "/");
-    Inode dir = fs->inodes[0];
-    char* child;
-    char valid = 1;
-    int32_t x;
+    char* tok = malloc((INODE_TYPE_SIZE+INODE_NAME_SIZE)*sizeof(char));
+    tok = strtok(pathname, "/");
+    Inode dir = current_dir;
+    char* child = malloc((INODE_TYPE_SIZE+INODE_NAME_SIZE)*sizeof(char));
+    char valid = true;
+    Inode x;
+    Inode father;
 
     while (tok != NULL) {
         child = tok;
-        x = isInDir(child, dir, fs);
-        if(x >= 0 && valid) {
-            dir = fs->inodes[x];
+        father = dir;
+        x = searchInodeOnDirByName(fs, dir, child);
+        if(x != NULL && valid) {
+            dir = fs->inodes[x->number];
+        }
+        else if (valid) {
+            dir = NULL;
+            valid = 0;
+        }
+        else {
+            warning("Invalid pathname!");
+            return -2;
+        }
+        tok = strtok(NULL,"/");
+    }
+
+    return father->number;
+}
+
+int32_t getInodeNumberfromPathname (char *pathname, Filesystem fs, Inode current_dir){
+
+    char* tok = malloc((INODE_TYPE_SIZE+INODE_NAME_SIZE)*sizeof(char));
+    tok = strtok(pathname, "/");
+    Inode dir = current_dir;
+    char* child = malloc((INODE_TYPE_SIZE+INODE_NAME_SIZE)*sizeof(char));
+    char valid = true;
+    Inode x;
+
+    while (tok != NULL) {
+        child = tok;
+        x = searchInodeOnDirByName(fs, dir, child);
+        if(x != NULL && valid) {
+            dir = fs->inodes[x->number];
         }
         else if (valid) {
             dir = NULL;
@@ -206,6 +280,48 @@ int32_t getInodefromPathname (char *pathname, Filesystem fs){
 
     if(valid)
         return dir->number;
+    else
+        return -1; //path existe a menos do ultimo
+}
 
-    return -1;
+char* getFullNamefromPathname (char* pathname){
+
+    char* name = malloc((INODE_NAME_SIZE+INODE_TYPE_SIZE+1)*sizeof(char));
+    char* tok = malloc(256);
+    int32_t i,p = 0;
+
+    tok = strtok(pathname, "/");
+
+    while(tok != NULL) {
+        name = tok;
+        tok = strtok(NULL, "/");
+    }
+
+    free(tok);
+
+    //Check name size
+    for(i=0;i<INODE_NAME_SIZE;i++) {
+        if(name[i] == '.') {
+            p = i+1;
+            break;
+        }
+        if(name[i] == '\0') break;
+    }
+    if(i==INODE_NAME_SIZE) {
+        warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
+        free(name);
+        return NULL;
+    }
+
+    //Check type size
+    for(i=0;i<INODE_TYPE_SIZE;i++){
+        if(name[p+i] == '\0') break;
+    }
+    if(i==INODE_TYPE_SIZE) {
+        warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
+        free(name);
+        return NULL;
+    }
+
+    return name;
 }

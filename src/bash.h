@@ -1,4 +1,4 @@
-/* 
+/*
    Task 2 - bash.h
    01/06/2015
    Lucas Padilha - 119785 | Pedro Tadahiro - 103797
@@ -76,3 +76,15 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name);
  * 		char* fs_name = filesystem a ser utilizado
 */
 void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name);
+
+/*
+*/
+int32_t getFatherfromPathname (char* pathname, Filesystem fs, Inode current_dir);
+
+/*
+*/
+int32_t getInodeNumberfromPathname (char *pathname, Filesystem fs, Inode current_dir);
+
+/*
+*/
+char* getFullNamefromPathname (char* pathname);
