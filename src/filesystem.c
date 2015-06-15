@@ -568,6 +568,24 @@ void getInodeAtBlock (int32_t position, Datablock block, Inode inode) {
   memcpy ((void *) inode->blocks, block->content+position+(soi32*5)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, BLOCKS_PER_INODE * soi32);
 }
 
+// findInodePosAtBlock
+int32_t findInodePosAtBlock (Inode inode, int32_t block_size){
+	
+	if(inode == NULL)
+		return -1; //Inode invalido
+		
+	if(block_size == 0) {
+		error("Block size = 0!");
+		return -10;
+	}
+		
+	int32_t q = block_size/INODE_SIZE;
+	
+	int32_t r = inode->number % q;
+	
+	return r*INODE_SIZE;
+}
+
 // retorna a permissao exclusiva de alguma
 Bool valuePermition (int32_t permition, int32_t exclusivePermition) {
   permition = permition / exclusivePermition;
