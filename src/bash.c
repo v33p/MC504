@@ -54,9 +54,9 @@ void bash (char *file_name){
     exit: termina o bash mode e sai da ferramenta.
 	*/
 
-	char command_line[COMMAND_SIZE];
+  //char command_line[COMMAND_SIZE];
 	char command[COMMAND_SIZE];
-	char last;
+	//char last;
 	int i = 0;
 
 	printf("Entrei no Bash!\n");
@@ -69,7 +69,7 @@ void bash (char *file_name){
 				break;
 			scanf("%c", &command[i]);
 		}
-		last = command[i-1];
+		//last = command[i-1];
 		command[i-1] = 0;
 		printf("%s", command);
 		if(strcmp(command, "ls") == 0) {
@@ -157,7 +157,7 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
         clearBlock(&dblock);
 		for(i=0;i<bsize;i++) {
 			dblock.content[i] = fgetc(arq);
-			if(dblock.content[i] == 'EOF')
+			if(dblock.content[i] == EOF)
 				break;
 		}
 		getFreeDatablock(fs, &dblock);
@@ -205,7 +205,7 @@ int32_t getInodefromPathname (char *pathname, Filesystem fs){
     }
 
     if(valid)
-        return dir;
+        return dir->number;
 
     return -1;
 }

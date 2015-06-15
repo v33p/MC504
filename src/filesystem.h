@@ -70,12 +70,12 @@ typedef struct datablock {
 
 // file system
 typedef struct filesystem {
-  char* file_name;
   Superblock superblock;    // 20B
   Bitmap inode_bitmap;      // 1024B
   Bitmap datablock_bitmap;  // X B
   Inode inodes[MAX_INODES]; //
   Datablock first_datablock;    //
+  char* file_name;
   // (importante: esse resto nao pode ser menor do que 88% do tamanho total)
 } filesystem, *Filesystem;
 

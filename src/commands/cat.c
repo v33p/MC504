@@ -25,9 +25,9 @@ void cat (Filesystem fs, Inode inode) {
   Datablock block;
   int32_t* array = getBlocksFromInode (fs, inode);
   for (i = 0; i < inode->number_of_blocks; i++) {
-    block = readBlockByFilesystem (array[i], fs, inode);
+    block = readBlockByFilesystem (array[i], fs);
     for (j = 0; j < fs->superblock->block_size; j++) {
-      if (block->content[j] == 'EOF') break;
+      if (block->content[j] == EOF) break;
       printf ("%c", block->content[j]);
     }
     printf ("\n");

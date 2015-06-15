@@ -11,7 +11,7 @@ Inode mkdir (Filesystem fs, Inode dir, char* name_inode) {
   if (dir->number_of_blocks == MAX_INODES) error ("Diretory full.");
   Inode inode = getFreeInode (fs);
   if (inode != NULL) {
-    inode->father = dir;
+    inode->father = dir->number;
     inode->dir = 1;
     strcpy (name_inode, fs->file_name);
     inode->permition = 110;

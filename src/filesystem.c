@@ -23,8 +23,10 @@ void warning (const char* message) {
 Filesystem createFileSystem (int32_t block_size, char* file_name) {
   Filesystem fs = malloc (sizeof (filesystem));
   int32_t number_of_blocks = FILE_SIZE / block_size;
-  fs->file_name = malloc (strlen (file_name) * sizeof (char));
-  strcpy (file_name, fs->file_name);
+  char* name = malloc (strlen (file_name) * sizeof (char));
+  strcpy (name, file_name);
+  fs->file_name = name;
+  fs->file_name[strlen (file_name)-1] = '\0';
   fs->superblock = createSuperBlock (block_size);
   fs->inode_bitmap = createBitmap (MAX_INODES);
   fs->inode_bitmap->map[0] = 1;
@@ -178,7 +180,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     writeBlock (atual, file, block, bsize);
   }
 
-  printFilesystem (fs);
+  //printFilesystem (fs);
 
   fclose (file);
 }
@@ -266,7 +268,7 @@ Filesystem fileToFilesystem (char* file_name) {
     }
   }
 
-  printFilesystem (fs);
+  //printFilesystem (fs);
 
   fclose (file);
   return fs;
@@ -494,8 +496,6 @@ int32_t* getBlocksFromInode (Filesystem fs, Inode inode) {
   return array;
 }
 
-// FUNCOES AUXILIARES
-
 // getIntAtBlock
 int32_t getIntAtBlock (int32_t position, Datablock block) {
   int32_t value;
@@ -554,6 +554,13 @@ void getInodeAtBlock (int32_t position, Datablock block, Inode inode) {
   memcpy ((void *) inode->blocks, block->content+position+(soi32*5)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, BLOCKS_PER_INODE * soi32);
 }
 
+// retorna a permissao exclusiva de alguma 
+Bool valuePermition (int32_t permition, int32_t exclusivePermition) {
+  permition = permition / exclusivePermition;
+  if (permition % 2 == 0) return false;
+  else return true;
+}
+
 // PRINTERS
 
 // printSuperblock
@@ -581,7 +588,9 @@ void printInode (Inode inode) {
   printf ("Inode %d:\n", inode->number);
   printf ("father: %d\n", inode->father);
   printf ("permitions: %d\n", inode->permition);
-  printf ("timestamp: %d\n", inode->timestamp);
+  struct tm* timeinfo;
+  timeinfo = localtime ((time_t*) &(inode->timestamp));
+  printf ("timestamp: %s\n", asctime (timeinfo));
   printf ("Name: %s.%s\n", inode->name, inode->type);
   if (inode->dir == 0) printf ("dir: nao\n");
   else printf ("dir: sim\n");
@@ -601,6 +610,23 @@ void printFilesystem (Filesystem fs) {
   printBitmap (fs->inode_bitmap, MAX_INODES);
   printBitmap (fs->datablock_bitmap, FILE_SIZE / fs->superblock->block_size);
   printAllInodes (fs);
+}
+
+
+char* printPermitions (Inode inode) {
+  char* permition = "RWE";
+  int32_t value = inode->permition;
+  if (valuePermition (value, 100) == false) permition[0] = '-';
+  if (valuePermition (value, 10) == false) permition[1] = '-';
+  if (valuePermition (value, 1) == false) permition[2] = '-';
+  return permition;
+}
+
+int32_t printSizeInode (Filesystem fs, Inode inode) {
+  if (inode->dir != 1) {
+    return inode->number_of_blocks * fs->superblock->block_size;
+  }
+  return 0; // nao sei o caso de diretorio
 }
 
 // TODO: Para todo codigo de create precisamos criar um codigo de free;
