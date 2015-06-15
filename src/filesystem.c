@@ -568,6 +568,18 @@ void getInodeAtBlock (int32_t position, Datablock block, Inode inode) {
   memcpy ((void *) inode->blocks, block->content+position+(soi32*5)+INODE_TYPE_SIZE+INODE_NAME_SIZE+1, BLOCKS_PER_INODE * soi32);
 }
 
+int32_t findInodeBlock(Inode inode, int32_t block_size) {
+
+	if(inode == NULL)
+		return -1; //Inode invalido
+	
+	if(block_size <= 0)
+		error("Block Size Invalido!");
+		
+	return inode->number / (block_size/INODE_SIZE);
+		
+}
+
 // findInodePosAtBlock
 int32_t findInodePosAtBlock (Inode inode, int32_t block_size){
 	
@@ -584,6 +596,57 @@ int32_t findInodePosAtBlock (Inode inode, int32_t block_size){
 	int32_t r = inode->number % q;
 	
 	return r*INODE_SIZE;
+}
+
+int32_t insertBlockInInode(int32_t filho, Inode inode, Filesystem fs, FILE* file){
+	
+	if (inode->number_of_blocks >= MAX_BLOCKS_PER_INODE)
+		error("Inode is full! Cannot insert Block/Inode to it!");
+	
+	datablock block,temp;
+	int32_t i = inode->number_of_blocks;
+	int32_t j = 0; //contador loop
+	
+	if(i<BLOCKS_PER_INODE-1) {
+		inode->blocks[i] = filho;
+		inode->number_of_blocks++;
+		return 0;
+	}
+	else { //indirecao
+		int32_t indirection_lines = (fs->superblock->block_size/(sizeof(int32_t))) - 1;
+		int32_t indirection_blocks = 0;
+		i = inode->number_of_blocks;
+		i = i - (BLOCKS_PER_INODE-1);
+		
+		while(i>0){
+			i = i - indirection_lines;
+			indirection_blocks++;
+		}
+		i = i + indirection_lines - 1; //ultima linha a procurar no ultimo bloco
+		if(i == 0)
+				if(fs->superblock->number_of_blocks >= FILE_SIZE/fs->superblock->block_size){
+					warning("Not enough datablock for indirection!");
+					return -1;
+				}
+				
+		block.id = inode->blocks[BLOCKS_PER_INODE-1]; //copiar bloco pro bloco
+		readBlocktoBlock(&block, fs->superblock->block_size, file);
+		for(j=0;j<indirection_blocks-1;j++) {
+			temp = block;
+			temp.id = getIntAtBlock (indirection_lines-1, &block);
+			readBlocktoBlock (&temp, fs->superblock->block_size, file);
+			block = temp;
+		}
+		if(i==0) {
+			getFreeDatablock(fs, &temp);
+			setIntAtBlock(fs->superblock->block_size-sizeof(int32_t), &block, temp.id); 
+			writeBlock(block.id, file, &block, fs->superblock->block_size);
+			block = temp;
+		}
+		setIntAtBlock (i*sizeof(int32_t), &block, filho);
+		writeBlock(block.id, file, &block, fs->superblock->block_size);
+		return 1;
+	}
 }
 
 // retorna a permissao exclusiva de alguma

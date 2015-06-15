@@ -170,6 +170,8 @@ funcao cria um datablock e retorna.
  */
 Datablock readBlock (int32_t id, FILE* file, int32_t block_size);
 
+void readBlocktoBlock (Datablock datablock, int32_t block_size, FILE* file);
+
 /*
  */
 Datablock readBlockByFilesystem (int32_t id, Filesystem fs); 
@@ -256,6 +258,12 @@ void getInodeAtBlock (int32_t position, Datablock block, Inode inode);
 /*
  */
 void clearBlock (Datablock block);
+
+int32_t findInodeBlock(Inode inode, int32_t block_size);
+
+int32_t insertBlockInInode(int32_t filho, Inode inode, Filesystem fs, FILE* file);
+
+int32_t findInodePosAtBlock (Inode inode, int32_t block_size);
 
 // PRINTERS
 

@@ -128,12 +128,11 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 	if (fs == NULL) error ("Filesystem -> Null file.");
 
     c = getFatherfromPathname(arq_ufs, fs, fs->inodes[0]);
-    if(c<0) error("Invalid pathname!");
+    if(c < 0) error("Invalid pathname!");
     if(fs->inodes[c]->number_of_blocks >= MAX_BLOCKS_PER_INODE)
         error("Diretory is full!");
 
 	bsize = fs->superblock->block_size;
-	//TODO: Tratar nome arquivo
 
     do{
         fgetc(arq);
@@ -162,8 +161,13 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 
 	fs->inodes[c]->number_of_blocks++;
 	inode = getFreeInode(fs);
-    //insertBlockInInode(fs->inodes[c], inode->number, bsize);
+
+    insertBlockInInode(inode->number, fs->inodes[c], fs, ufs);
     //salvar fs->inodes[c]
+	dblock.id = findInodeBlock(fs->inodes[c], bsize);
+	readBlocktoBlock(&dblock, bsize, ufs);
+	setInodeAtBlock(c, &dblock, fs->inodes[c]);
+	writeBlock(dblock.id, ufs, &dblock, bsize);
 
 	for (j=0;j<file_blocks;j++){
         clearBlock(&dblock);
@@ -187,6 +191,14 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
         //Fazer tratamento de indirecao
     }
     //salvar o inode de alguma forma
+    c = findInodePosAtBlock(inode, bsize);
+    if(c < 0) 
+		error("Couldn't find InodePosAtBlock");
+	
+	dblock.id = findInodeBlock(inode, bsize);
+	readBlocktoBlock(&dblock, bsize, ufs);
+	setInodeAtBlock(c, &dblock, inode);
+	writeBlock(dblock.id, ufs, &dblock, bsize);
 
 
     free(inode);
@@ -200,6 +212,7 @@ void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
     int32_t x = 0;
     Inode inode;
     int32_t i = 0;
+    int32_t bsize = fs->superblock->block_size;
 
     if (arq == NULL) error("Native FS -> Null file");
 
@@ -212,10 +225,44 @@ void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
     if(inode->permition < 100)
         error("Sem permissao de leitura!");
 
+	if(inode->number_of_blocks > BLOCKS_PER_INODE-1){
+		int32_t indirection_lines = (bsize/(sizeof(int32_t))) - 1;
+		int32_t indirection_blocks = 0;
+		int32_t index = inode->number_of_blocks;
+		index = index - (BLOCKS_PER_INODE-1);
+		
+		while(index>0){
+			index = index - indirection_lines;
+			indirection_blocks++;
+		}
+		index = index + indirection_lines - 1; //ultima linha a procurar no ultimo bloco
+	}
+
     for(i=0;i<inode->number_of_blocks;i++){
-        memcpy(arq,(void*)inode->blocks[i], fs->superblock->block_size);
-        //tratar indirecao
-    }
+        if(i<BLOCKS_PER_INODE-1) {
+			memcpy(arq+i*bsize,inode->blocks[i], bsize);
+		}
+		else { //tratar indirecao
+
+			block.id = inode->blocks[BLOCKS_PER_INODE-1]; //copiar bloco pro bloco
+			readBlocktoBlock(&block, fs->superblock->block_size, file);
+			for(j=0;j<indirection_blocks-1;j++) {
+				temp = block;
+				temp.id = getIntAtBlock (indirection_lines-1, &block);
+				readBlocktoBlock (&temp, fs->superblock->block_size, file);
+				block = temp;
+			}
+			if(i==0) {
+				getFreeDatablock(fs, &temp);
+				setIntAtBlock(fs->superblock->block_size-sizeof(int32_t), &block, temp.id); 
+				writeBlock(block.id, file, &block, fs->superblock->block_size);
+				block = temp;
+			}
+			setIntAtBlock (i*sizeof(int32_t), &block, filho);
+			writeBlock(block.id, file, &block, fs->superblock->block_size);
+			return 1;
+		}
+	}
 
     fclose(arq);
     free(fs);
@@ -314,6 +361,8 @@ char* getFullNamefromPathname (char* pathname){
     }
 
     //Check type size
+    if(p == 0) return name;
+    
     for(i=0;i<INODE_TYPE_SIZE;i++){
         if(name[p+i] == '\0') break;
     }
@@ -325,3 +374,43 @@ char* getFullNamefromPathname (char* pathname){
 
     return name;
 }
+
+int32_t checkNameValidity (char* name){
+
+	int32_t i = 0;
+	int32_t p = 0;
+
+	for(i=0;i<INODE_NAME_SIZE;i++) {
+        if(name[i] == '.') {
+            p = i+1;
+            break;
+        }
+        if(name[i] == '\0') break;
+    }
+    if(i==INODE_NAME_SIZE) {
+        warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
+        free(name);
+        return -1; // InvalidName
+    }
+
+    //Check type size
+    if(p == 0) return +1; // Name (No type)
+    
+    for(i=0;i<INODE_TYPE_SIZE;i++){
+        if(name[p+i] == '\0') break;
+    }
+    if(i==INODE_TYPE_SIZE) {
+        warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
+        free(name);
+        return -2; //Name.InvalidType
+    }
+	
+	return +2; // Name.Type
+}
+
+
+
+
+
+
+
