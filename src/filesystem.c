@@ -31,11 +31,13 @@ Filesystem createFileSystem (int32_t block_size, char* file_name) {
   fs->inode_bitmap = createBitmap (MAX_INODES);
   fs->inode_bitmap->map[0] = 1;
   fs->datablock_bitmap = createBitmap (number_of_blocks);
+  fs->current_dir = 0;
   adjustInitialFileSystem (fs, block_size);
   for (int32_t i = 1; i < MAX_INODES; i++)
     fs->inodes[i] = NULL;
   fs->inodes[0] = createInode (fs, 0, -1, 111, "", "", 1);
-  fs->first_datablock = NULL;
+  fs->first_datablock = -1;
+  fs->first_inodeblock = -1;
   return fs;
 }
 
@@ -189,7 +191,7 @@ void filesystemToFile (Filesystem fs, char* file_name) {
 Filesystem fileToFilesystem (char* file_name) {
   FILE* file = fopen (file_name, "r");
 
-    if (file == NULL) error("Could not open filesystem (invalid pathname)!");
+  if (file == NULL) error("Could not open filesystem (invalid pathname)!");
 
   int32_t soi32 = sizeof (int32_t);
   int32_t current = 0;
@@ -255,6 +257,8 @@ Filesystem fileToFilesystem (char* file_name) {
   int32_t value;
   Inode inode;
 
+  fs->first_inodeblock = current+1;
+  
   for (i = 0; i < total_blocks_inodes; i++) {
     current++;
     clearBlock (block);
@@ -270,6 +274,8 @@ Filesystem fileToFilesystem (char* file_name) {
     }
   }
 
+  fs->first_datablock = current+1;
+  
   //printFilesystem (fs);
 
   fclose (file);
@@ -510,6 +516,13 @@ int32_t* getBlocksFromInode (Filesystem fs, Inode inode) {
   return array;
 }
 
+//
+int32_t findDatablockByInode (int32_t inode_id, Filesystem fs) {
+  int32_t inodes_per_block = fs->superblock->block_size / INODE_SIZE;
+
+  return (inode_id / inodes_per_block) + fs->first_inodeblock;
+}
+
 // getIntAtBlock
 int32_t getIntAtBlock (int32_t position, Datablock block) {
   int32_t value;
@@ -599,7 +612,6 @@ int32_t findInodePosAtBlock (Inode inode, int32_t block_size){
 }
 
 int32_t insertBlockInInode(int32_t filho, Inode inode, Filesystem fs, FILE* file){
-	
 	if (inode->number_of_blocks >= MAX_BLOCKS_PER_INODE)
 		error("Inode is full! Cannot insert Block/Inode to it!");
 	
@@ -705,6 +717,9 @@ void printFilesystem (Filesystem fs) {
   printBitmap (fs->inode_bitmap, MAX_INODES);
   printBitmap (fs->datablock_bitmap, FILE_SIZE / fs->superblock->block_size);
   printAllInodes (fs);
+  printf ("Current dir: %d\n", fs->current_dir);
+  printf ("First inode block: %d\n", fs->first_inodeblock);
+  printf ("First datablock: %d\n", fs->first_datablock);
 }
 
 

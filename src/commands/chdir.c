@@ -6,3 +6,7 @@
 */
 
 #include "chdir.h"
+
+void chdir (Filesystem fs) {
+  
+}

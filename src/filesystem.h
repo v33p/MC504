@@ -74,13 +74,14 @@ typedef struct filesystem {
   Bitmap inode_bitmap;      // 1024B
   Bitmap datablock_bitmap;  // X B
   Inode inodes[MAX_INODES]; //
-  Datablock first_datablock;    //
+  int32_t first_inodeblock;
+  int32_t first_datablock;    //
+  int32_t current_dir;
   char* file_name;
   // (importante: esse resto nao pode ser menor do que 88% do tamanho total)
 } filesystem, *Filesystem;
 
 /* FUNCTIONS */
-
 
 /*
   Error: Imprime uma mensagem para debug e corta a execucao do programa.
