@@ -8,15 +8,15 @@
 #include "echo.h"
 
 void echo (Filesystem fs, Inode dir, char* dado, char* alvo) {
-  Inode inode = searchInodeOnDirByName (alvo);
+  Inode inode = searchInodeOnDirByName (fs, dir, alvo);
   if (inode != NULL) {
-    freeInode (inode);
+    freeInode (fs, inode);
   }
   char* newAlvo = strtok (alvo, ".");
   char* name = newAlvo;
-  char* newAlvo = strtok (NULL, ".");
+  newAlvo = strtok (NULL, ".");
   char* type = newAlvo;
-  inode = createInode (fs, getFreeInode(fs), dir->number, 110, type, name, 0);
+  inode = createInode (fs, getFreeInode (fs), dir->number, 110, type, name, 0);
   int32_t len = strlen (dado);
   if (len < fs->superblock->block_size) {
     Datablock block = malloc (sizeof (datablock));
@@ -29,6 +29,6 @@ void echo (Filesystem fs, Inode dir, char* dado, char* alvo) {
   }
   else {
     // tratar
-    int32_t number_of_blocks = len / fs->superblock->block_size;
+    //int32_t number_of_blocks = len / fs->superblock->block_size;
   }
 }
