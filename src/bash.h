@@ -88,3 +88,9 @@ int32_t getInodeNumberfromPathname (char *pathname, Filesystem fs, Inode current
 /*
 */
 char* getFullNamefromPathname (char* pathname);
+
+char* getName(char* full_name);
+
+char* getType(char* full_name);
+
+int32_t checkNameValidity (char* name);

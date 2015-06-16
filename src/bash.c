@@ -71,7 +71,6 @@ void bash (char *file_name){
 		}
 		//last = command[i-1];
 		command[i-1] = 0;
-		printf("%s", command);
 		if(strcmp(command, "ls") == 0) {
 			//ls
 			//printf("Comando ls\n");
@@ -115,6 +114,7 @@ void bash (char *file_name){
 void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 	FILE* arq = fopen(arq_sistema, "r");
 	Filesystem fs = fileToFilesystem (fs_name);
+	printSuperblock(fs->superblock);
 	FILE* ufs = fopen(fs_name, "r+");
 	int32_t file_size = 0; //tamanho do file
 	int32_t file_blocks = 0; //# blocos usado pelo file
@@ -122,6 +122,7 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 	int32_t i = 0, j = 0; //contadores
 	int32_t c = 0;
 	datablock dblock;
+	char* full_name;
 	Inode inode;
 
 	if (arq == NULL) error ("Native FS -> Null file.");
@@ -133,18 +134,21 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
         error("Diretory is full!");
 
 	bsize = fs->superblock->block_size;
+	
+	printAllInodes(fs);
 
+	printf("\n\nAntes de calcular tamanho arquivo\n\n");
     do{
         fgetc(arq);
         if( feof(arq) )
             break;
-        else
+        else {
             file_size++;
+            printf("\nLoop!\n");
+        }
     }while(true);
 
-	//fseek(arq, 0, SEEK_END);
-	//file_size = ftell(arq);
-	//fseek(arq, 0, SEEK_SET);
+	fseek(arq, -file_size, SEEK_CUR);
 
 	printf("File Size: %d\n", file_size);
 
@@ -160,14 +164,28 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 		error ("Filesystem is full! (Not enough Datablocks)");
 
 	fs->inodes[c]->number_of_blocks++;
-	inode = getFreeInode(fs);
+	//inode = getFreeInode(fs);
+	inode = createEmptyInode (fs, getFreeInode (fs));
+	printf("\nPeguei Inode Livre\n");
+	
+	full_name = getFullNamefromPathname(arq_sistema);
+	j = checkNameValidity(full_name);
+	if(j<0) 
+		error("Invalid filename!");
+	if(j==1){}
+	else
+		strncpy(inode->type, getType(full_name), INODE_TYPE_SIZE);
+	strncpy(inode->name, getName(full_name), INODE_NAME_SIZE);
 
     insertBlockInInode(inode->number, fs->inodes[c], fs, ufs);
-    //salvar fs->inodes[c]
-	dblock.id = findInodeBlock(fs->inodes[c], bsize);
+    printf("\nInseri bloco no inode\n\n");
+	dblock.id = findDatablockByInode(c, fs);
 	readBlocktoBlock(&dblock, bsize, ufs);
 	setInodeAtBlock(c, &dblock, fs->inodes[c]);
 	writeBlock(dblock.id, ufs, &dblock, bsize);
+	printf("\nSalvei o novo inode pai!\n");
+	printAllInodes(fs);
+	return;
 
 	for (j=0;j<file_blocks;j++){
         clearBlock(&dblock);
@@ -209,12 +227,16 @@ void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
     FILE* arq = fopen(arq_sistema, "w");
     Filesystem fs = fileToFilesystem(fs_name);
+    FILE* ufs = fopen(fs_name, "r");
     int32_t x = 0;
     Inode inode;
+    Datablock block;
     int32_t i = 0;
+    int32_t* array;
     int32_t bsize = fs->superblock->block_size;
 
     if (arq == NULL) error("Native FS -> Null file");
+    if (ufs == NULL) error("User FS -> Null file");
 
     x = getInodeNumberfromPathname(arq_ufs, fs, fs->inodes[0]);
     if (x<0)
@@ -238,20 +260,27 @@ void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
 		index = index + indirection_lines - 1; //ultima linha a procurar no ultimo bloco
 	}
 
+	array = getBlocksFromInode(fs, inode);
+
     for(i=0;i<inode->number_of_blocks;i++){
-        if(i<BLOCKS_PER_INODE-1) {
+		block = readBlock (array[i], ufs, bsize);
+		memcpy(arq+i*bsize, block, bsize);
+		free(block);
+	}
+        /*if(i<BLOCKS_PER_INODE-1) {
 			memcpy(arq+i*bsize,inode->blocks[i], bsize);
 		}
 		else { //tratar indirecao
 
 			block.id = inode->blocks[BLOCKS_PER_INODE-1]; //copiar bloco pro bloco
 			readBlocktoBlock(&block, fs->superblock->block_size, file);
-			for(j=0;j<indirection_blocks-1;j++) {
+			for(j=0;j< current_indir;j++) {
 				temp = block;
-				temp.id = getIntAtBlock (indirection_lines-1, &block);
+				temp.id = getIntAtBlock (indirection_lines, &block);
 				readBlocktoBlock (&temp, fs->superblock->block_size, file);
 				block = temp;
 			}
+			for(k=0;k<m;
 			if(i==0) {
 				getFreeDatablock(fs, &temp);
 				setIntAtBlock(fs->superblock->block_size-sizeof(int32_t), &block, temp.id); 
@@ -261,10 +290,10 @@ void ufsOutput(char *arq_ufs, char *arq_sistema, char *fs_name) {
 			setIntAtBlock (i*sizeof(int32_t), &block, filho);
 			writeBlock(block.id, file, &block, fs->superblock->block_size);
 			return 1;
-		}
-	}
+		}*/
 
     fclose(arq);
+    fclose(ufs);
     free(fs);
 }
 
@@ -372,6 +401,7 @@ char* getFullNamefromPathname (char* pathname){
         return NULL;
     }
 
+	printf("\n\n Peguei o full name\n\n");
     return name;
 }
 
@@ -379,6 +409,9 @@ int32_t checkNameValidity (char* name){
 
 	int32_t i = 0;
 	int32_t p = 0;
+	
+	if(name == NULL)
+		error("Invalid Filename!");
 
 	for(i=0;i<INODE_NAME_SIZE;i++) {
         if(name[i] == '.') {
@@ -388,7 +421,7 @@ int32_t checkNameValidity (char* name){
         if(name[i] == '\0') break;
     }
     if(i==INODE_NAME_SIZE) {
-        warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
+        //warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
         free(name);
         return -1; // InvalidName
     }
@@ -400,7 +433,7 @@ int32_t checkNameValidity (char* name){
         if(name[p+i] == '\0') break;
     }
     if(i==INODE_TYPE_SIZE) {
-        warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
+        //warning ("Invalid Filename size! Format(size): <INODE_NAME_SIZE>.<INODE_TYPE_SIZE>");
         free(name);
         return -2; //Name.InvalidType
     }
@@ -408,9 +441,47 @@ int32_t checkNameValidity (char* name){
 	return +2; // Name.Type
 }
 
+char* getName(char* full_name) {
 
+	char* name = malloc(INODE_NAME_SIZE);
 
+	for(int i=0;i<INODE_NAME_SIZE;i++) {
+		
+        if(full_name[i] == '.')
+            break;
+        name[i] = full_name[i];
+        
+        if(full_name[i] == '\0') break;
+    }
 
+    return name;
+	
+}
+
+char* getType(char* full_name) {
+
+	char* type = malloc(INODE_TYPE_SIZE);
+
+	int32_t i = 0;
+	int32_t p = 0;
+
+	for(i=0;i<INODE_NAME_SIZE;i++) {
+        if(full_name[i] == '.') {
+            p = i+1;
+            break;
+        }
+        if(full_name[i] == '\0') break;
+    }
+
+    //Check type size
+    
+    for(i=0;i<INODE_TYPE_SIZE;i++){
+		type[i] = full_name[i];
+        if(full_name[p+i] == '\0') break;
+    }
+	
+	return type;
+}
 
 
 
