@@ -7,6 +7,6 @@
 
 #include "chdir.h"
 
-void chdir (Filesystem fs) {
-  
+void chdir (Filesystem fs, Inode dir) {
+  fs->current_dir = dir->number;
 }

@@ -324,14 +324,12 @@ void writeBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock) {
 }
 
 // getFreeInode
-Inode getFreeInode (Filesystem fs) {
+int32_t getFreeInode (Filesystem fs) {
   int32_t i;
   for (i = 0; i < MAX_INODES; i++)
     if (fs->inode_bitmap->map[i] == 0)
             break;
-  Inode inode = createEmptyInode (fs, i);
-  if (inode != NULL) inode->permition = 110;
-  return inode;
+  return i;
 }
 
 // freeInode

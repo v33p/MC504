@@ -194,7 +194,7 @@ void WriteBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock);
 
 /*
  */
-Inode getFreeInode (Filesystem fs);
+int32_t getFreeInode (Filesystem fs);
 
 /*
  */
@@ -234,6 +234,10 @@ int32_t searchBlockOnInodeByValue (Filesystem fs, Inode inode, int32_t value);
 /*
  */
 int32_t* getBlocksFromInode (Filesystem fs, Inode inode);
+
+/*
+ */
+int32_t findDatablockByInode (int32_t inode_id, Filesystem fs);
 
 // FUNCOES AUXILIARES
 
