@@ -55,51 +55,111 @@ void bash (char *file_name){
 	*/
 
   //char command_line[COMMAND_SIZE];
-	char command[COMMAND_SIZE];
+  //char command[COMMAND_SIZE];
 	//char last;
-	int i = 0;
+	//int i = 0;
 
 	printf("Entrei no Bash! %s\n", file_name);
 
+	Filesystem fs = fileToFilesystem (file_name);
+	char input[256];
+	char* tok;
 	while(1) {
 		//fgets(command_line, sizeof(command_line), stdin);
-		scanf("%c", &command[0]);
+		/*scanf("%c", &command[0]);
 		for(i=1;i<COMMAND_SIZE-1;i++){
 			if(isspace(command[i-1]))
 				break;
 			scanf("%c", &command[i]);
 		}
 		//last = command[i-1];
-		command[i-1] = 0;
-		if(strcmp(command, "ls") == 0) {
+		command[i-1] = 0;*/
+	  scanf ("%s", input);
+	  tok = strtok (input, " ");
+		if(strcmp(tok, "ls") == 0) {
 			//ls
 			//printf("Comando ls\n");
+		  tok = strtok (NULL, " ");
+		  if (tok == NULL)
+		    ls (fs, fs->inodes[fs->current_dir], "");
+		  else
+		    ls (fs, fs->inodes[fs->current_dir], tok);
 		}
-		else if(strcmp(command, "chmod") == 0) {
+		else if(strcmp(tok, "chmod") == 0) {
 			//chmod
 			//printf("Comando chmod\n");
+		  
 		}
-		else if(strcmp(command, "mkdir") == 0){
+		else if(strcmp(tok, "mkdir") == 0){
 			//mkdir
 			//printf("Comando mkdir\n");
+		  tok = strtok (NULL, " ");
+		  if (tok == NULL)
+		    printf ("Wrong parameters for mkdir");
+		  else
+		    mkdir (fs, fs->inodes[fs->current_dir], tok); 
 		}
-		else if(strcmp(command, "chdir") == 0){
+		else if(strcmp(tok, "chdir") == 0){
 			//chdir
 			//printf("Comando chdir\n");
+		  tok = strtok (NULL, " ");
+		  if (tok == NULL)
+		    printf ("Wronf parameters for chdir");
+		  else {
+		    for (int i = 0; i < MAX_INODES; i++) {
+		      if (fs->inodes[i] != NULL) {
+			if (fs->inodes[i]->dir == 1) {
+			  if (strcmp (fs->inodes[i]->name, tok) == 0)
+			    chdir (fs, fs->inodes[i]);
+			}
+		      }
+		    }
+		  }
 		}
-		else if(strcmp(command, "rm") == 0){
+		else if(strcmp(tok, "rm") == 0){
 			//rm
 			//printf("Comando rm\n");
+		  tok = strtok (NULL, " ");
+		  if (tok == NULL)
+		    printf ("Wrong parameter for rm");
+		  else {
+		    for (int i = 0; i < MAX_INODES; i++) {
+		      if (fs->inodes[i] != NULL) {
+			char* tok2 = strtok (tok, ".");
+			char* name = tok2;
+			tok2 = strtok (NULL, ".");
+			if (tok2 == NULL) {
+			  if (strcmp (fs->inodes[i]->name, name) == 0){
+			    rm (fs, fs->inodes[i]);
+			  }
+			}
+			else {
+			  if (strcmp (fs->inodes[i]->name, name) == 0){
+			    rm (fs, fs->inodes[i]);
+			  }
+			}
+		      }
+		    }
+		  }
 		}
-		else if(strcmp(command, "echo") == 0){
+		else if(strcmp(tok, "echo") == 0){
 			//echo
 			//printf("Comando echo\n");
 		}
-		else if(strcmp(command, "cat") == 0){
+		else if(strcmp(tok, "cat") == 0){
 			//cat
 			//printf("Comando cat\n");
+		  tok = strtok (NULL, " ");
+		  if (tok == NULL)
+		    printf ("Wrong parameter for cat");
+		  else {
+		    char* tok2 = strtok (NULL, ".");
+		    Inode inode = searchInodeOnDirByName (fs, fs->inodes[fs->current_dir], tok2);
+		    if (inode != NULL)
+		      cat (fs, inode);
+		  }
 		}
-		else if(strcmp(command, "exit") == 0){
+		else if(strcmp(tok, "exit") == 0){
 			//exit
 			//printf("Comando exit\n");
 			return;

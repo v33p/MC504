@@ -46,7 +46,7 @@ Superblock createSuperBlock (int32_t block_size) {
   Superblock superblock = malloc (sizeof (superblock));
   superblock->magic_number = 119785; // nao sei como configurar o magic number
   superblock->root_position = 0;
-  superblock->number_of_inodes = 1;
+  superblock->number_of_inodes = 0;
   superblock->number_of_blocks = 0; // precisa calcular
   superblock->block_size = block_size;
   superblock->number_of_dir = 1;
