@@ -29,6 +29,6 @@ void ls (Filesystem fs, Inode dir, char* param) {
 	printf ("%s.%s\n", fs->inodes[array[i]]->name, fs->inodes[array[i]]->type);
     }
   }
-  free (array);
+  //free (array);
 }
 

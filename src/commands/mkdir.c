@@ -12,7 +12,7 @@ Inode mkdir (Filesystem fs, Inode dir, char* name_inode) {
   Inode inode = createInode (fs, getFreeInode (fs), dir->number, 110, "", name_inode, 1);
   if (inode != NULL) {
     if (dir->number_of_blocks < BLOCKS_PER_INODE-1) {
-      dir->blocks[dir->number_of_blocks-1] = inode->number;
+      dir->blocks[dir->number_of_blocks] = inode->number;
     }
     else {
       // calcular qual e o bloco que deve armazenar o novo bloco
@@ -42,6 +42,20 @@ Inode mkdir (Filesystem fs, Inode dir, char* name_inode) {
 	setIntAtBlock (((i+1 - BLOCKS_PER_INODE-1) % inodes_per_indirection_block) * sizeof (int32_t), block, inode->number);
       }
     }
+    dir->number_of_blocks++;
+    fs->superblock->number_of_dir++;
   }
+
+  // salvando no arquivo o inode
+  //printf("%d\n", findDatablockByInode(inode->number, fs));
+  //Datablock dblock = readBlockByFilesystem (findDatablockByInode(inode->number, fs), fs);
+  //readBlocktoBlock (&dblock, fs->superblock->block_size, file);
+  
+  //setInodeAtBlock (findInodePosAtBlock (inode, fs->superblock->block_size), dblock, inode);
+  //writeBlockByFilesystem (findDatablockByInode(inode->number, fs), fs, dblock);
+  //free (dblock);
+  
+  //fclose (file);
+  printf ("Criou inode\n");
   return inode;
 }

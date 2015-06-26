@@ -5,9 +5,12 @@
 # Podemos adicionar testes aqui no makefile tambem.
 
 # TODO: Melhorar esse codigo de make
-mkfs: src/mkfs.c src/mkfs.h
+mkfs: src/mkfs.c src/mkfs.h bash.fs
 	gcc -std=c11 -Wall src/mkfs.c -o mkfs 
 bash.fs: src/bash.c src/bash.h
 	gcc -std=c11 -Wall src/bash.c -o bash.fs
+test:
+	./mkfs fs
+	./bash.fs -b fs
 clean:
 	rm mkfs fs bash.fs

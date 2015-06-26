@@ -23,10 +23,10 @@ void warning (const char* message) {
 Filesystem createFileSystem (int32_t block_size, char* file_name) {
   Filesystem fs = malloc (sizeof (filesystem));
   int32_t number_of_blocks = FILE_SIZE / block_size;
-  char* name = malloc (strlen (file_name) * sizeof (char));
+  char* name = malloc ((strlen (file_name) + 1) * sizeof (char));
   strcpy (name, file_name);
   fs->file_name = name;
-  fs->file_name[strlen (file_name)-1] = '\0';
+  fs->file_name[strlen (file_name)] = '\0';
   fs->superblock = createSuperBlock (block_size);
   fs->inode_bitmap = createBitmap (MAX_INODES);
   fs->inode_bitmap->map[0] = 1;
@@ -135,6 +135,8 @@ void filesystemToFile (Filesystem fs, char* file_name) {
   setIntAtBlock (soi32*5, block, fs->superblock->number_of_dir);
   writeBlock (atual, file, block, fs->superblock->block_size);
 
+  //printf ("superblock\n");
+  
   // INODE BITMAP
   block->id = ++atual;
   clearBlock (block);
@@ -147,6 +149,8 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     setStringAtBlock (0, block, bsize, fs->inode_bitmap->map + bsize);
     writeBlock (atual, file, block, bsize);
   }
+
+  //printf ("ibm\n");
 
   // DATABLOCK BITMAP
   for (i = 0; i < total_blocks/bsize; i++) {
@@ -164,6 +168,8 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     writeBlock (atual, file, block, bsize);
   }
 
+  //printf ("dbbm\n");
+  
   // INODES
   int32_t inodes_per_block = bsize / INODE_SIZE;
   int32_t total_blocks_inodes = MAX_INODES / inodes_per_block;
@@ -182,6 +188,8 @@ void filesystemToFile (Filesystem fs, char* file_name) {
     writeBlock (atual, file, block, bsize);
   }
 
+  //printf ("inodes");
+  
   //printFilesystem (fs);
 
   fclose (file);
@@ -279,6 +287,7 @@ Filesystem fileToFilesystem (char* file_name) {
   //printFilesystem (fs);
 
   fclose (file);
+  
   return fs;
 }
 
