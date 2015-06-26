@@ -98,6 +98,24 @@ Inode createInode (Filesystem fs, int32_t number, int32_t father, int32_t permit
   return inode;
 }
 
+void createInode2 (Inode child, int32_t number, int32_t father, int32_t permition, char* type, char* name, char dir, int32_t* ni, int32_t* nd) {
+	int32_t i = 0;
+	
+	child->number = number;
+	child->father = father;
+	child->permition = permition;
+	child->timestamp = (int32_t) time(NULL);
+	strcpy(child->name, name);
+	strcpy(child->type, type);
+	for(i=0;i<BLOCKS_PER_INODE;i++){
+		child->blocks[i] = -1;
+	}
+	child->dir = dir;
+	if (dir == 1)
+		(*nd)++;
+	(*ni)++;
+}
+
 // adjustInitialFileSystem
 void adjustInitialFileSystem (Filesystem fs, int32_t block_size) {
   int32_t inodes_per_block = block_size / INODE_SIZE;
@@ -300,7 +318,7 @@ Datablock readBlock (int32_t id, FILE* file, int32_t block_size) {
   return datablock;
 }
 
-// readBlock2
+// readBlocktoBlock
 void readBlocktoBlock (Datablock datablock, int32_t block_size, FILE* file) {
   fseek (file, datablock->id * block_size, SEEK_SET);
   fread (datablock->content, sizeof (char), block_size, file);
@@ -341,6 +359,20 @@ int32_t getFreeInode (Filesystem fs) {
   return i;
 }
 
+int32_t getFreeInodeNumber (char* ib){
+	
+	int32_t i;
+
+		for (i = 0; i < MAX_INODES; i++)
+			if (ib[i] == 0) {
+				ib[i] = 1;
+				return i;
+			}
+				
+	return -1;
+	
+}
+
 // freeInode
 void freeInode (Filesystem fs, Inode inode) {
   int32_t i;
@@ -377,6 +409,22 @@ void getFreeDatablock (Filesystem fs, Datablock block) {
   }
   else
     warning ("There is no more datablocks.");
+}
+
+int32_t getFreeDatablock2 (char* dbb, int32_t block_size, int32_t* nb) {
+  int32_t i;
+  int32_t total_of_blocks = FILE_SIZE / block_size;
+  if (*nb < total_of_blocks -1) {
+	for (i = 0; i < total_of_blocks; i++)
+      if (dbb[i] == 0) break;
+    dbb[i] = 1;
+    (*nb)++;
+    return i;
+  }
+  else {
+    warning ("There is no more datablocks.");
+	return -1;
+  }
 }
 
 // freeDatablock
@@ -530,6 +578,12 @@ int32_t findDatablockByInode (int32_t inode_id, Filesystem fs) {
   return (inode_id / inodes_per_block) + fs->first_inodeblock;
 }
 
+int32_t findIdByInode (int32_t inode_number, int32_t fib, int32_t block_size) {
+  int32_t inodes_per_block = block_size / INODE_SIZE;
+
+  return (inode_number / inodes_per_block) + fib;
+}
+
 // getIntAtBlock
 int32_t getIntAtBlock (int32_t position, Datablock block) {
   int32_t value;
@@ -617,6 +671,67 @@ int32_t findInodePosAtBlock (Inode inode, int32_t block_size){
 	
 	return r*INODE_SIZE;
 }
+
+int32_t findPosInodeByBlock (int32_t number, int32_t block_size){
+		
+	int32_t q = block_size/INODE_SIZE;
+	
+	int32_t r = number % q;
+	
+	return r*INODE_SIZE;
+}
+
+void update(FILE* file, int32_t block_size, int32_t fib, int32_t ni, int32_t nb, int32_t nd, char* ib, char* dbb){
+	
+	datablock dblock;
+	int32_t atual = 0;
+	int32_t i = 0;
+	int32_t soi = sizeof(int32_t);
+	int32_t total_blocks = FILE_SIZE / block_size;
+	clearBlock(&dblock);
+	dblock.id = 0;
+	
+	//savesuperblock
+	readBlocktoBlock(&dblock, block_size, file);
+	setIntAtBlock(soi*2, &dblock, ni);
+	setIntAtBlock(soi*3, &dblock, nb);
+	setIntAtBlock(soi*5, &dblock, nd);
+	writeBlock(0, file, &dblock, block_size);
+	
+
+	//ib
+	clearBlock(&dblock);
+	  // INODE BITMAP
+	dblock.id = ++atual;
+
+	setStringAtBlock (0, &dblock, MIN(block_size, MAX_INODES), ib);
+	writeBlock (atual, file, &dblock, block_size);
+	if (block_size < MAX_INODES) {
+		dblock.id = ++atual;
+		clearBlock (&dblock);
+		setStringAtBlock (0, &dblock, block_size, ib + block_size);
+		writeBlock (atual, file, &dblock, block_size);
+	  }
+
+  //printf ("ibm\n");
+
+  // DATABLOCK BITMAP
+	for (i = 0; i < total_blocks/block_size; i++) {
+		dblock.id = ++atual;
+		clearBlock (&dblock);
+
+		setStringAtBlock (0, &dblock, block_size, dbb + (i*block_size));
+		writeBlock (atual, file, &dblock, block_size);
+	  }
+	  if (total_blocks % block_size != 0) {
+		dblock.id = ++atual;
+		clearBlock (&dblock);
+
+		setStringAtBlock (0, &dblock, (total_blocks % block_size), dbb + ((total_blocks/block_size) * block_size));
+		writeBlock (atual, file, &dblock, block_size);
+	  }
+}
+
 
 int32_t insertBlockInInode(int32_t filho, Inode inode, Filesystem fs, FILE* file){
 	if (inode->number_of_blocks >= MAX_BLOCKS_PER_INODE)

@@ -65,7 +65,23 @@ void bash (char *file_name){
   
   printf("Entrei no Bash! %s\n", file_name);
   
-  Filesystem fs = fileToFilesystem (file_name);
+  //Filesystem fs = fileToFilesystem (file_name);
+  int32_t ni = 1;
+  int32_t nd = 1;
+  int32_t block_size = 512;
+	FILE* file = fopen(file_name, "r+");
+	int32_t fib = 99;
+	char ib[1024];
+	int32_t i = 0;
+	ib[0] = 1;
+	for(i=1;i<1024;i++)
+		ib[i] = 0;
+	inode root;
+	root.number = 0;
+	root.permition = 111;
+	root.father = -1;
+	root.number_of_blocks = 0;
+	root.dir = 1;
   char input[256];
   char* tok;
   while(1) {
@@ -85,10 +101,10 @@ void bash (char *file_name){
       //ls
       //printf("Comando ls\n");
       tok = strtok (NULL, " ");
-      if (tok == NULL)
-	ls (fs, fs->inodes[fs->current_dir], "");
-      else
-	ls (fs, fs->inodes[fs->current_dir], tok);
+      //if (tok == NULL)
+	//ls (fs, fs->inodes[fs->current_dir], "");
+      //else{}
+	//ls (fs, fs->inodes[fs->current_dir], tok);
     }
     else if(strcmp(tok, "chmod") == 0) {
       //chmod
@@ -101,11 +117,12 @@ void bash (char *file_name){
       if (tok == NULL)
 	printf ("Wrong parameters for mkdir");
       else {
-	mkdir (fs, fs->inodes[fs->current_dir], tok);	
+	//mkdir (fs, fs->inodes[fs->current_dir], tok);
+	mkdir2 (ib, fib, &ni, &nd, block_size, file, &root, tok);
 	//filesystemToFile (fs, file_name);
 	//printFilesystem (fs);
       }
-    }
+    }/*
     else if(strcmp(tok, "chdir") == 0){
       //chdir
       //printf("Comando chdir\n");
@@ -114,10 +131,10 @@ void bash (char *file_name){
 	printf ("Wronf parameters for chdir");
       else {
 	for (int i = 0; i < MAX_INODES; i++) {
-	  if (fs->inodes[i] != NULL) {
-	    if (fs->inodes[i]->dir == 1) {
-	      if (strcmp (fs->inodes[i]->name, tok) == 0)
-		chdir (fs, fs->inodes[i]);
+	 // if (fs->inodes[i] != NULL) {
+	 //   if (fs->inodes[i]->dir == 1) {
+	 //     if (strcmp (fs->inodes[i]->name, tok) == 0)
+	//	chdir (fs, fs->inodes[i]);
 	    }
 	  }
 	}
@@ -131,7 +148,7 @@ void bash (char *file_name){
 	printf ("Wrong parameter for rm");
       else {
 	for (int i = 0; i < MAX_INODES; i++) {
-	  if (fs->inodes[i] != NULL) {
+	//  if (fs->inodes[i] != NULL) {
 	    char* tok2 = strtok (tok, ".");
 	    char* name = tok2;
 	    tok2 = strtok (NULL, ".");
@@ -165,7 +182,7 @@ void bash (char *file_name){
 	if (inode != NULL)
 	  cat (fs, inode);
       }
-    }
+    } */
     else if(strcmp(tok, "exit") == 0){
       //exit
       //printf("Comando exit\n");
@@ -173,7 +190,7 @@ void bash (char *file_name){
     }
     else {
       warning ("Comando invalido!");
-    }  
+    } 
   }
 }
 

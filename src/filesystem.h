@@ -196,6 +196,8 @@ void WriteBlockByFilesystem (int32_t id, Filesystem fs, Datablock datablock);
  */
 int32_t getFreeInode (Filesystem fs);
 
+int32_t getFreeInodeNumber (char* ib);
+
 /*
  */
 void freeInode (Filesystem fs, Inode inode);
