@@ -63,7 +63,7 @@ void bash (char *file_name){
   //char last;
   //int i = 0;
   
-  printf("Entrei no Bash! %s\n", file_name);
+  //printf("Entrei no Bash! %s\n", file_name);
   
   Filesystem fs = fileToFilesystem (file_name);
   int32_t nb = fs->superblock->number_of_blocks;
@@ -92,8 +92,10 @@ void bash (char *file_name){
 	free(fs);
   char input[256];
   char* tok;
+  printf("Comandos funcionando: mkdir, chdir, ls (-l)");
   while(1) {
-    // Tratando entrada	  
+    // Tratando entrada
+    printf("bash.fs >");
     char c = getchar();
     int i = 0;
     while (c != '\n') {	    
@@ -107,7 +109,7 @@ void bash (char *file_name){
     tok = strtok (input, " ");
     if(strcmp(tok, "ls") == 0) {
       //ls
-      printf("Comando ls\n");
+      //printf("Comando ls\n");
       tok = strtok (NULL, " ");
       ls2(block_size, fib, file, &current_dir, tok);
     }
@@ -202,7 +204,6 @@ void bash (char *file_name){
 void ufsInput(char *arq_sistema, char *arq_ufs, char *fs_name) {
 	FILE* arq = fopen(arq_sistema, "r");
 	Filesystem fs = fileToFilesystem (fs_name);
-	printSuperblock(fs->superblock);
 	FILE* ufs = fopen(fs_name, "r+");
 	int32_t file_size = 0; //tamanho do file
 	int32_t file_blocks = 0; //# blocos usado pelo file

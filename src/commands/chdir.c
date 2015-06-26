@@ -17,7 +17,7 @@ void chdir2 (Inode current_dir, char* name, char* ib, int32_t block_size, FILE* 
   inode new_inode;
   
   if (name == NULL) {
-	  dblock.id = 0;
+	  dblock.id = findIdByInode(0, fib, block_size);
 	  readBlocktoBlock(&dblock, block_size, file);
 	  getInodeAtBlock(0, &dblock, &new_inode);
 	current_dir->number = new_inode.number;

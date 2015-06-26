@@ -63,6 +63,7 @@ Inode mkdir (Filesystem fs, Inode dir, char* name_inode) {
 void mkdir2 (char* ib,int32_t fib, int32_t* ni, int32_t* nd, int32_t block_size, FILE* file, Inode dir, char* name_inode) {
   if (dir->number_of_blocks == MAX_INODES) error ("Diretory full.");
   inode child;
+  int32_t i = 0;
   
   
 	int32_t n = getFreeInodeNumber(ib);
@@ -71,26 +72,52 @@ void mkdir2 (char* ib,int32_t fib, int32_t* ni, int32_t* nd, int32_t block_size,
 		
 	createInode2(&child,n, dir->number, 110, "", name_inode, 1, ni, nd);
 	
-	printf("Free Inode Number: %d\n", n);
+	printf("New Inode Number: %d\n", n);
 	printf("Nome do inode: %s\n", name_inode);
+	/*printf("Nome do inode: %s\n", child.name);*/
 
   
     dir->blocks[dir->number_of_blocks] = child.number;
     dir->number_of_blocks++;
   
+ 
+  
 
   // salvando no arquivo o inode
   datablock dblock;
-  dblock.id = findIdByInode(n, fib, block_size);
-  printf("Block ID: %d\n", dblock.id);
+  /*dblock.id = 100;
   readBlocktoBlock(&dblock, block_size, file);
-  printf("Pos Inode by Block: %d\n", findPosInodeByBlock(n,block_size));
+  getInodeAtBlock(0, &dblock, &child);
+  printInode(&child);*/
+  dblock.id = findIdByInode(n, fib, block_size);
+  clearBlock(&dblock);
+  printf("Block ID (filho): %d\n", dblock.id);
+  readBlocktoBlock(&dblock, block_size, file);
+  printf("Pos Inode by Block (filho): %d\n", findPosInodeByBlock(n,block_size));
   setInodeAtBlock(findPosInodeByBlock(n, block_size), &dblock, &child);
   writeBlock(dblock.id, file, &dblock, block_size);
   
+  //save father
+  dblock.id = findIdByInode(dir->number, fib, block_size);
+  clearBlock(&dblock);
+  printf("Block ID (pai): %d\n", dblock.id);
+  readBlocktoBlock(&dblock, block_size, file);
+  printf("Pos Inode by Block (pai): %d\n", findPosInodeByBlock(n,block_size));
+  child.number = dir->number;
+  child.father = dir->father;
+  child.permition = dir->permition;
+  strcpy(child.name, dir->name);
+  strcpy(child.type, dir->type);
+  child.timestamp = dir->timestamp;
+  child.dir = dir->dir;
+  child.number_of_blocks = dir->number_of_blocks;
+  for(i=0;i<BLOCKS_PER_INODE;i++)
+	child.blocks[i] = dir->blocks[i];
+  setInodeAtBlock(findPosInodeByBlock(child.number, block_size), &dblock, &child);
+  writeBlock(dblock.id, file, &dblock, block_size);
   /*readBlocktoBlock(&dblock, block_size, file);
   getInodeAtBlock(0, &dblock, &child);
   printInode(&child);*/
 
-  printf ("Criou inode em %d\n", dblock.id);
+  //printf ("Criou inode no %d\n", dblock.id);
 }

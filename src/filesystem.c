@@ -105,6 +105,7 @@ void createInode2 (Inode child, int32_t number, int32_t father, int32_t permitio
 	child->father = father;
 	child->permition = permition;
 	child->timestamp = (int32_t) time(NULL);
+	//printf("Size of timestamp: %lu\n\n", sizeof(child->timestamp));
 	strncpy(child->name, name, (size_t)INODE_NAME_SIZE);
 	child->name[INODE_NAME_SIZE-1] = 0;
 	strncpy(child->type, type, (size_t)INODE_TYPE_SIZE);
