@@ -105,8 +105,11 @@ void createInode2 (Inode child, int32_t number, int32_t father, int32_t permitio
 	child->father = father;
 	child->permition = permition;
 	child->timestamp = (int32_t) time(NULL);
-	strcpy(child->name, name);
-	strcpy(child->type, type);
+	strncpy(child->name, name, (size_t)INODE_NAME_SIZE);
+	child->name[INODE_NAME_SIZE-1] = 0;
+	strncpy(child->type, type, (size_t)INODE_TYPE_SIZE);
+	child->type[INODE_TYPE_SIZE-1] = 0;
+	child->number_of_blocks = 0;
 	for(i=0;i<BLOCKS_PER_INODE;i++){
 		child->blocks[i] = -1;
 	}
@@ -361,13 +364,14 @@ int32_t getFreeInode (Filesystem fs) {
 
 int32_t getFreeInodeNumber (char* ib){
 	
-	int32_t i;
+	int32_t i = 0;
 
-		for (i = 0; i < MAX_INODES; i++)
+		for (i = 0; i < MAX_INODES; i++){
 			if (ib[i] == 0) {
 				ib[i] = 1;
 				return i;
 			}
+		}
 				
 	return -1;
 	
@@ -819,12 +823,12 @@ void printInode (Inode inode) {
   printf ("permitions: %d\n", inode->permition);
   struct tm* timeinfo;
   timeinfo = localtime ((time_t*) &(inode->timestamp));
-  printf ("timestamp: %s\n", asctime (timeinfo));
+  printf ("timestamp: %s", asctime (timeinfo));
   printf ("Name: %s.%s\n", inode->name, inode->type);
   if (inode->dir == 0) printf ("dir: nao\n");
   else printf ("dir: sim\n");
   //printf ("dir: %c\n", inode->dir);
-  printf ("number of blocks: %d\n", inode->number_of_blocks);
+  printf ("number of blocks: %d\n\n", inode->number_of_blocks);
 }
 
 // printAllInodes

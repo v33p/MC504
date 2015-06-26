@@ -32,3 +32,34 @@ void ls (Filesystem fs, Inode dir, char* param) {
   //free (array);
 }
 
+void ls2 (int32_t block_size, int32_t fib, FILE* file, Inode current_dir, char* param) {
+
+	int32_t i = 0;
+	int32_t number;
+	datablock dblock;
+	inode atual;
+
+	if (param == NULL){
+		for(i=0;i<current_dir->number_of_blocks;i++){
+			clearBlock(&dblock);
+			number = current_dir->blocks[i];
+			dblock.id = findIdByInode(number, fib, block_size);
+			readBlocktoBlock(&dblock, block_size, file);
+			getInodeAtBlock(findPosInodeByBlock(number, block_size),&dblock, &atual);
+			printf("%s\n", atual.name);
+		}
+		return;
+	}
+	
+	if(strcmp(param, "-l") == 0) {
+		for(i=0;i<current_dir->number_of_blocks;i++){
+			clearBlock(&dblock);
+			number = current_dir->blocks[i];
+			dblock.id = findIdByInode(number, fib, block_size);
+			readBlocktoBlock(&dblock, block_size, file);
+			getInodeAtBlock(findPosInodeByBlock(number, block_size),&dblock, &atual);
+			printf("%s     %d\n", atual.name, atual.number_of_blocks*block_size);
+		}
+	}
+}
+

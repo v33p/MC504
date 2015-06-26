@@ -66,6 +66,7 @@ void bash (char *file_name){
   printf("Entrei no Bash! %s\n", file_name);
   
   Filesystem fs = fileToFilesystem (file_name);
+  int32_t nb = fs->superblock->number_of_blocks;
   int32_t ni = fs->superblock->number_of_inodes;
   int32_t nd = fs->superblock->number_of_dir;
   int32_t block_size = fs->superblock->block_size;
@@ -73,7 +74,10 @@ void bash (char *file_name){
 	int32_t fib = fs->first_inodeblock;
 	int32_t fdb = fs->first_datablock;
 	char ib[1024];
+	char dbb[FILE_SIZE/512];
 	int32_t i = 0;
+	for(i=0;i<FILE_SIZE/block_size;i++)
+		dbb[i] = fs->datablock_bitmap->map[i];
 	ib[0] = 1;
 	for(i=1;i<1024;i++)
 		ib[i] = fs->inode_bitmap->map[i];
@@ -103,48 +107,43 @@ void bash (char *file_name){
     tok = strtok (input, " ");
     if(strcmp(tok, "ls") == 0) {
       //ls
-      //printf("Comando ls\n");
+      printf("Comando ls\n");
       tok = strtok (NULL, " ");
-      //if (tok == NULL)
-	//ls (fs, fs->inodes[fs->current_dir], "");
-      //else{}
-	//ls (fs, fs->inodes[fs->current_dir], tok);
+      ls2(block_size, fib, file, &current_dir, tok);
     }
     else if(strcmp(tok, "chmod") == 0) {
       //chmod
       //printf("Comando chmod\n");  
     }
-    else if(strcmp(tok, "mymkdir") == 0){
-      //mkdir
-      //printf("Comando mkdir\n");
+    else if(strcmp(tok, "mkdir") == 0){
       tok = strtok (NULL, " ");
       if (tok == NULL)
 	printf ("Wrong parameters for mkdir");
       else {
 	//mkdir (fs, fs->inodes[fs->current_dir], tok);
 	mkdir2 (ib, fib, &ni, &nd, block_size, file, &current_dir, tok);
+	update(file, block_size, fib, ni, nb, nd, ib, dbb);
 	//filesystemToFile (fs, file_name);
 	//printFilesystem (fs);
       }
-    }/*
+    }
     else if(strcmp(tok, "chdir") == 0){
       //chdir
       //printf("Comando chdir\n");
+       
       tok = strtok (NULL, " ");
-      if (tok == NULL)
-	printf ("Wronf parameters for chdir");
-      else {
-	for (int i = 0; i < MAX_INODES; i++) {
+		chdir2(&current_dir, tok, ib, block_size, file, fib);
+	//for (int i = 0; i < MAX_INODES; i++) {
 	 // if (fs->inodes[i] != NULL) {
 	 //   if (fs->inodes[i]->dir == 1) {
 	 //     if (strcmp (fs->inodes[i]->name, tok) == 0)
 	//	chdir (fs, fs->inodes[i]);
-	    }
+	/*    }
 	  }
 	}
-      }
+      }*/
     }
-    else if(strcmp(tok, "rm") == 0){
+    /*else if(strcmp(tok, "rm") == 0){
       //rm
       //printf("Comando rm\n");
       tok = strtok (NULL, " ");
@@ -194,7 +193,9 @@ void bash (char *file_name){
     }
     else {
       warning ("Comando invalido!");
-    } 
+    }
+    for(i=0;i<256;i++)
+		input[i] = '\0';
   }
 }
 
