@@ -65,23 +65,27 @@ void bash (char *file_name){
   
   printf("Entrei no Bash! %s\n", file_name);
   
-  //Filesystem fs = fileToFilesystem (file_name);
-  int32_t ni = 1;
-  int32_t nd = 1;
-  int32_t block_size = 512;
+  Filesystem fs = fileToFilesystem (file_name);
+  int32_t ni = fs->superblock->number_of_inodes;
+  int32_t nd = fs->superblock->number_of_dir;
+  int32_t block_size = fs->superblock->block_size;
 	FILE* file = fopen(file_name, "r+");
-	int32_t fib = 99;
+	int32_t fib = fs->first_inodeblock;
+	int32_t fdb = fs->first_datablock;
 	char ib[1024];
 	int32_t i = 0;
 	ib[0] = 1;
 	for(i=1;i<1024;i++)
-		ib[i] = 0;
-	inode root;
-	root.number = 0;
-	root.permition = 111;
-	root.father = -1;
-	root.number_of_blocks = 0;
-	root.dir = 1;
+		ib[i] = fs->inode_bitmap->map[i];
+	inode current_dir;
+	current_dir.number = 0;
+	current_dir.permition = 111;
+	current_dir.father = -1;
+	current_dir.number_of_blocks = 0;
+	current_dir.dir = 1;
+	strcpy(current_dir.name,"");
+	strcpy(current_dir.type,"");
+	free(fs);
   char input[256];
   char* tok;
   while(1) {
@@ -118,7 +122,7 @@ void bash (char *file_name){
 	printf ("Wrong parameters for mkdir");
       else {
 	//mkdir (fs, fs->inodes[fs->current_dir], tok);
-	mkdir2 (ib, fib, &ni, &nd, block_size, file, &root, tok);
+	mkdir2 (ib, fib, &ni, &nd, block_size, file, &current_dir, tok);
 	//filesystemToFile (fs, file_name);
 	//printFilesystem (fs);
       }
